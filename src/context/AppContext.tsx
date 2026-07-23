@@ -61,12 +61,16 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Helper to validate UUID format for PostgreSQL UUID columns
+const isUuid = (str?: string) =>
+  !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<NavTab>('orders');
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Initial state strictly from database or initial master data
+  // Initial state from mock data
   const [chassisList, setChassisList] = useState<Chassis[]>(INITIAL_CHASSIS);
   const [addonsList, setAddonsList] = useState<Addon[]>(INITIAL_ADDONS);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -148,7 +152,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (dbAddons && dbAddons.length > 0) {
         setAddonsList(dbAddons as Addon[]);
       } else {
-        // Seed default 10 master add-ons if database table is empty
         setAddonsList(INITIAL_ADDONS);
         try {
           await supabase.from('addons').insert(
@@ -185,13 +188,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     showToast(`Order status updated to ${newStatus}`, 'info');
 
-    try {
-      await supabase
-        .from('orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', orderId);
-    } catch (err) {
-      console.error('Supabase status update error:', err);
+    if (isUuid(orderId)) {
+      try {
+        await supabase
+          .from('orders')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq('id', orderId);
+      } catch (err) {
+        console.error('Supabase status update error:', err);
+      }
     }
   };
 
@@ -233,29 +238,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'success'
     );
 
-    try {
-      await supabase.from('orders').upsert({
-        id: targetOrder.id,
-        order_number: targetOrder.order_number,
-        customer_name: targetOrder.customer_name,
-        customer_email: targetOrder.customer_email,
-        customer_phone: targetOrder.customer_phone,
-        customer_company: targetOrder.customer_company,
-        delivery_location: targetOrder.delivery_location,
-        chassis_title: targetOrder.chassis_title,
-        chassis_base_price: targetOrder.chassis_base_price,
-        selected_addons: updatedAddons,
-        subtotal,
-        vat_rate: vatRate,
-        vat_amount: vatAmount,
-        monthly_recurring_fee: monthlyFee,
-        grand_total: grandTotal,
-        status: 'Quotation Sent',
-        admin_notes: adminNotes,
-        updated_at: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error('Supabase quotation upsert error:', err);
+    if (isUuid(targetOrder.id)) {
+      try {
+        await supabase.from('orders').upsert({
+          id: targetOrder.id,
+          order_number: targetOrder.order_number,
+          customer_name: targetOrder.customer_name,
+          customer_email: targetOrder.customer_email,
+          customer_phone: targetOrder.customer_phone,
+          customer_company: targetOrder.customer_company,
+          delivery_location: targetOrder.delivery_location,
+          chassis_title: targetOrder.chassis_title,
+          chassis_base_price: targetOrder.chassis_base_price,
+          selected_addons: updatedAddons,
+          subtotal,
+          vat_rate: vatRate,
+          vat_amount: vatAmount,
+          monthly_recurring_fee: monthlyFee,
+          grand_total: grandTotal,
+          status: 'Quotation Sent',
+          admin_notes: adminNotes,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error('Supabase quotation upsert error:', err);
+      }
     }
 
     return true;
@@ -282,7 +289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       },
     };
 
-    if (chassisData.id) {
+    if (chassisData.id && isUuid(chassisData.id)) {
       setChassisList((prev) =>
         prev.map((c) => (c.id === chassisData.id ? ({ ...c, ...payload } as Chassis) : c))
       );
@@ -301,10 +308,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast(`Save Error: ${e.message || e}`, 'error');
       }
     } else {
-      const tempId = Math.random().toString(36).substring(2, 9);
-      const tempChassis = { id: tempId, ...payload, created_at: new Date().toISOString() } as Chassis;
-      setChassisList((prev) => [tempChassis, ...prev]);
-
       showToast(`New Machine Model "${payload.title}" created`);
       try {
         const res = await supabase.from('chassis').insert([payload]).select();
@@ -312,7 +315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.error('Supabase insert error details:', res.error.message);
           showToast(`Supabase Error: ${res.error.message}`, 'error');
         } else if (res?.data && res.data[0]) {
-          setChassisList((prev) => prev.map((c) => (c.id === tempId ? (res.data[0] as Chassis) : c)));
+          setChassisList((prev) => [res.data[0] as Chassis, ...prev.filter((c) => c.id !== chassisData.id)]);
         }
       } catch (e: any) {
         console.error('Chassis insert exception:', e);
@@ -331,20 +334,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
     showToast(`Machine variant ${newStatus ? 'enabled' : 'disabled'}`);
 
-    try {
-      await supabase.from('chassis').update({ is_active: newStatus }).eq('id', id);
-    } catch (e) {
-      console.error(e);
+    if (isUuid(id)) {
+      try {
+        await supabase.from('chassis').update({ is_active: newStatus }).eq('id', id);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
   const deleteChassis = async (id: string) => {
     setChassisList((prev) => prev.filter((c) => c.id !== id));
     showToast('Machine model deleted', 'info');
-    try {
-      await supabase.from('chassis').delete().eq('id', id);
-    } catch (e) {
-      console.error(e);
+    if (isUuid(id)) {
+      try {
+        await supabase.from('chassis').delete().eq('id', id);
+      } catch (e) {
+        console.error('Supabase delete error:', e);
+      }
     }
   };
 
@@ -361,7 +368,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       compatible_models: addonData.compatible_models || ['All'],
     };
 
-    if (addonData.id) {
+    if (addonData.id && isUuid(addonData.id)) {
       setAddonsList((prev) =>
         prev.map((a) => (a.id === addonData.id ? ({ ...a, ...payload } as Addon) : a))
       );
@@ -379,17 +386,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showToast(`Save Error: ${e.message || e}`, 'error');
       }
     } else {
-      const tempId = Math.random().toString(36).substring(2, 9);
-      const tempAddon = { id: tempId, ...payload } as Addon;
-      setAddonsList((prev) => [...prev, tempAddon]);
-
       showToast(`Add-on "${payload.name}" created`);
       try {
         const res = await supabase.from('addons').insert([payload]).select();
         if (res?.error) {
           showToast(`Supabase error: ${res.error.message}`, 'error');
         } else if (res?.data && res.data[0]) {
-          setAddonsList((prev) => prev.map((a) => (a.id === tempId ? (res.data[0] as Addon) : a)));
+          setAddonsList((prev) => [...prev.filter((a) => a.id !== addonData.id), res.data[0] as Addon]);
         }
       } catch (e: any) {
         console.error(e);
@@ -408,20 +411,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
     showToast('Add-on status toggled');
 
-    try {
-      await supabase.from('addons').update({ is_active: newStatus }).eq('id', id);
-    } catch (e) {
-      console.error(e);
+    if (isUuid(id)) {
+      try {
+        await supabase.from('addons').update({ is_active: newStatus }).eq('id', id);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
   const deleteAddon = async (id: string) => {
     setAddonsList((prev) => prev.filter((a) => a.id !== id));
     showToast('Add-on deleted', 'info');
-    try {
-      await supabase.from('addons').delete().eq('id', id);
-    } catch (e) {
-      console.error(e);
+    if (isUuid(id)) {
+      try {
+        await supabase.from('addons').delete().eq('id', id);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
