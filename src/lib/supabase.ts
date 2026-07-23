@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://bvjgogntjsrzamskscbg.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2amdvZ250anNyemFtc2tzY2JnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MTIwMDAsImV4cCI6MjA5MTk4ODAwMH0.atVHydEdYQGDZDO47HaxgU1kctdGr1_5p3jI8SzRF3o';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Client pointing directly to sohub_admin schema
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   db: {
     schema: 'sohub_admin',
@@ -14,9 +13,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-export const isSupabaseConfigured = () => true;
+export const isSupabaseConfigured = () => !!(supabaseUrl && supabaseAnonKey);
 
-// Helper to clear all records
 export const clearAllSupabaseTables = async () => {
   try {
     await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
