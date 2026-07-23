@@ -58,26 +58,28 @@ export const ConfiguratorModule: React.FC = () => {
   const [settingsForm, setSettingsForm] = useState<GlobalSettings>(settings);
 
   // --- Chassis Modal Open Helper ---
+  // --- Chassis Modal Open Helper ---
   const handleOpenChassisModal = (chassis?: Chassis) => {
     setImagePreviewError(false);
     if (chassis) {
+      const isLocal = chassis.type === 'local';
       setEditingChassis({
         ...chassis,
         allowed_addons: chassis.allowed_addons || addonsList.map((a) => a.id),
         specifications: {
-          slots: chassis.specifications?.slots || 48,
-          capacity: chassis.specifications?.capacity || '300 SKU 6 Layers',
-          dimensions: chassis.specifications?.dimensions || '183cm × 75cm × 78cm',
-          temperature_range: chassis.specifications?.temperature_range || '4-25°C',
-          power_consumption: chassis.specifications?.power_consumption || '220V / 460W (Chiller)',
-          display_type: chassis.specifications?.display_type || '10-inch Touchscreen, Android 11',
-          spring: chassis.specifications?.spring || 'Single & Double',
+          capacity: chassis.specifications?.capacity || (isLocal ? '200-300 SKU' : '300 SKU 6 Layers'),
           product: chassis.specifications?.product || 'Snacks and Drinks',
-          gas: chassis.specifications?.gas || 'R290',
-          connectivity: chassis.specifications?.connectivity || '4G SIM + WiFi',
-          payment: chassis.specifications?.payment || 'Cashless Payment',
-          material: chassis.specifications?.material || 'Metal, Glass & PVC',
-          gross_weight: chassis.specifications?.gross_weight || '250 kg',
+          connectivity: chassis.specifications?.connectivity || (isLocal ? 'WiFi' : '4G SIM + WiFi'),
+          material: chassis.specifications?.material || (isLocal ? 'Metal + Glass' : 'Metal, Glass & PVC'),
+          dimensions: chassis.specifications?.dimensions || '183cm × 75cm × 78cm',
+          payment: chassis.specifications?.payment || (isLocal ? 'Cashless Payment Only' : 'Cashless Payment'),
+          slots: isLocal ? 0 : (chassis.specifications?.slots || 48),
+          temperature_range: isLocal ? '' : (chassis.specifications?.temperature_range || '4-25°C'),
+          power_consumption: isLocal ? '' : (chassis.specifications?.power_consumption || '220V / 460W (Chiller)'),
+          display_type: isLocal ? '' : (chassis.specifications?.display_type || '10-inch Touchscreen, Android 11'),
+          spring: isLocal ? '' : (chassis.specifications?.spring || 'Single & Double'),
+          gas: isLocal ? '' : (chassis.specifications?.gas || 'R290'),
+          gross_weight: isLocal ? '' : (chassis.specifications?.gross_weight || '250 kg'),
         },
       });
       setImageInputMode(chassis.image_url?.startsWith('data:') ? 'file' : 'url');
@@ -114,7 +116,25 @@ export const ConfiguratorModule: React.FC = () => {
 
   const handleSaveChassisSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    saveChassis(editingChassis);
+    const chassisToSave = { ...editingChassis };
+    if (chassisToSave.type === 'local' && chassisToSave.specifications) {
+      chassisToSave.specifications = {
+        capacity: chassisToSave.specifications.capacity || '200-300 SKU',
+        product: chassisToSave.specifications.product || 'Snacks and Drinks',
+        connectivity: chassisToSave.specifications.connectivity || 'WiFi',
+        material: chassisToSave.specifications.material || 'Metal + Glass',
+        dimensions: chassisToSave.specifications.dimensions || '183cm × 75cm × 78cm',
+        payment: chassisToSave.specifications.payment || 'Cashless Payment Only',
+        slots: 0,
+        temperature_range: '',
+        power_consumption: '',
+        display_type: '',
+        spring: '',
+        gas: '',
+        gross_weight: '',
+      };
+    }
+    saveChassis(chassisToSave);
     setIsChassisModalOpen(false);
   };
 
@@ -145,20 +165,19 @@ export const ConfiguratorModule: React.FC = () => {
         ...prev,
         type: 'local',
         specifications: {
-          ...prev.specifications,
           capacity: '200-300 SKU',
           product: 'Snacks and Drinks',
           connectivity: 'WiFi',
           material: 'Metal + Glass',
           dimensions: '183cm × 75cm × 78cm',
           payment: 'Cashless Payment Only',
-          slots: prev.specifications?.slots || 48,
-          temperature_range: prev.specifications?.temperature_range || '4-25°C',
-          power_consumption: prev.specifications?.power_consumption || '220V / 460W (Chiller)',
-          display_type: prev.specifications?.display_type || '10-inch Touchscreen, Android 11',
-          spring: prev.specifications?.spring || 'Single & Double',
-          gas: prev.specifications?.gas || 'R290',
-          gross_weight: prev.specifications?.gross_weight || '250 kg',
+          slots: 0,
+          temperature_range: '',
+          power_consumption: '',
+          display_type: '',
+          spring: '',
+          gas: '',
+          gross_weight: '',
         },
       }));
     } else {
@@ -166,7 +185,6 @@ export const ConfiguratorModule: React.FC = () => {
         ...prev,
         type: 'imported',
         specifications: {
-          ...prev.specifications,
           capacity: '300 SKU 6 Layers',
           product: 'Snacks and Drinks',
           connectivity: '4G SIM + WiFi',
