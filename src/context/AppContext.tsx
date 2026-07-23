@@ -53,6 +53,7 @@ interface AppContextType {
 
   // Handlers
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+  deleteOrder: (orderId: string) => Promise<void>;
   saveAndResendQuotation: (
     orderId: string,
     updatedAddons: Order['selected_addons'],
@@ -210,7 +211,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setCurrentUser(loggedUser);
           setIsAuthenticated(true);
 
-          // Update last login in Supabase
           try {
             await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', dbUser.id);
           } catch (e) {
@@ -290,7 +290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Signed out successfully', 'info');
   };
 
-  // --- USER MANAGEMENT HANDLERS (Synced with Supabase DB) ---
+  // --- USER MANAGEMENT HANDLERS ---
   const addUser = async (userData: Partial<AdminUser> & { password?: string }): Promise<boolean> => {
     const payload = {
       full_name: userData.full_name || 'Admin User',
@@ -300,7 +300,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'Active',
     };
 
-    // Save to Local State immediately
     const localUser: AdminUser = {
       id: 'usr-' + Math.random().toString(36).substring(2, 9),
       full_name: payload.full_name,
@@ -312,7 +311,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setUsersList((prev) => [localUser, ...prev]);
 
-    // Save to Supabase `users` table
     try {
       const res = await supabase.from('users').insert([payload]).select();
       if (res?.error) {
@@ -407,7 +405,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const fetchFromSupabase = async () => {
     setIsSyncing(true);
     try {
-      // 1. Fetch Admin Users from Supabase DB
       const { data: dbUsers } = await supabase
         .from('users')
         .select('*')
@@ -427,7 +424,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
       }
 
-      // 2. Fetch Orders
       const { data: dbOrders } = await supabase
         .from('orders')
         .select('*')
@@ -437,7 +433,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setOrders(dbOrders as Order[]);
       }
 
-      // 3. Fetch Chassis
       const { data: dbChassis } = await supabase
         .from('chassis')
         .select('*')
@@ -447,7 +442,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setChassisList(dbChassis as Chassis[]);
       }
 
-      // 4. Fetch Addons
       const { data: dbAddons } = await supabase
         .from('addons')
         .select('*')
@@ -489,6 +483,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .eq('id', orderId);
       } catch (err) {
         console.error('Supabase status update error:', err);
+      }
+    }
+  };
+
+  const deleteOrder = async (orderId: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    if (selectedOrder?.id === orderId) {
+      setSelectedOrder(null);
+    }
+    showToast('Lead / Quotation record deleted permanently', 'info');
+
+    if (isUuid(orderId)) {
+      try {
+        await supabase.from('orders').delete().eq('id', orderId);
+      } catch (err) {
+        console.error('Supabase order delete error:', err);
       }
     }
   };
@@ -763,6 +773,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         refreshFromSupabase: fetchFromSupabase,
         clearAllData,
         updateOrderStatus,
+        deleteOrder,
         saveAndResendQuotation,
         saveChassis,
         toggleChassisStatus,

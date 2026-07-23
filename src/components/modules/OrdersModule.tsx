@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   XCircle,
   TrendingUp,
+  Trash2,
 } from 'lucide-react';
 
 export const OrdersModule: React.FC = () => {
@@ -32,6 +33,7 @@ export const OrdersModule: React.FC = () => {
     selectedOrder,
     setSelectedOrder,
     updateOrderStatus,
+    deleteOrder,
     saveAndResendQuotation,
     settings,
   } = useApp();
@@ -107,9 +109,16 @@ export const OrdersModule: React.FC = () => {
     }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, orderId: string, orderNumber: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to permanently delete Order / Quotation #${orderNumber}?`)) {
+      deleteOrder(orderId);
+    }
+  };
+
   return (
-    <div className="space-y-6 pb-12">
-      {/* Streamlined Ultra-Fast Top Stat Cards (No Heavy Charts) */}
+    <div className="space-y-6 pb-12 select-none">
+      {/* Streamlined Ultra-Fast Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-subtle flex items-center justify-between">
           <div className="space-y-1">
@@ -166,7 +175,7 @@ export const OrdersModule: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 statusFilter === tab.id
                   ? 'bg-slate-900 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -265,15 +274,24 @@ export const OrdersModule: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedOrder(order);
-                        }}
-                        className="px-3 py-1.5 bg-slate-900 text-white hover:bg-[#ff751a] rounded-xl font-bold transition-all text-xs inline-flex items-center gap-1 shadow-xs"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> Re-estimate
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrder(order);
+                          }}
+                          className="px-3 py-1.5 bg-slate-900 text-white hover:bg-[#ff751a] rounded-xl font-bold transition-all text-xs inline-flex items-center gap-1 shadow-xs cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Re-estimate
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(e, order.id, order.order_number)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                          title="Delete Lead Record"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -302,12 +320,21 @@ export const OrdersModule: React.FC = () => {
                 </div>
                 <h2 className="text-base font-bold">Lead Details & Quotation Breakdown</h2>
               </div>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => handleDeleteClick(e, selectedOrder.id, selectedOrder.order_number)}
+                  className="p-1.5 text-rose-400 hover:text-rose-300 rounded-lg bg-rose-950/40 hover:bg-rose-950 border border-rose-800/40 transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold px-2.5"
+                  title="Delete Order"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Scrollable Body */}
@@ -359,7 +386,7 @@ export const OrdersModule: React.FC = () => {
                     <button
                       key={st}
                       onClick={() => updateOrderStatus(selectedOrder.id, st)}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                         selectedOrder.status === st
                           ? 'bg-[#ff751a] text-white shadow-xs'
                           : 'bg-white text-slate-600 hover:bg-slate-200'
@@ -463,7 +490,7 @@ export const OrdersModule: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSelectedOrder(null)}
-                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
               >
                 Close Drawer
               </button>
@@ -472,7 +499,7 @@ export const OrdersModule: React.FC = () => {
                 type="button"
                 onClick={handleSaveAndSend}
                 disabled={isSendingLambda}
-                className="px-6 py-3 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-3 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {isSendingLambda ? (
                   <>
