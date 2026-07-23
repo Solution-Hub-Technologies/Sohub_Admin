@@ -108,7 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAddonsList([]);
       setOrders([]);
       setSelectedOrder(null);
-      showToast('All demo data cleared permanently!', 'info');
+      showToast('All data cleared permanently!', 'info');
     } catch (err) {
       console.error('Error clearing data:', err);
     } finally {
@@ -120,38 +120,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsSyncing(true);
     try {
       // Fetch Orders
-      const { data: dbOrders, error: orderErr } = await supabase
+      const { data: dbOrders } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!orderErr) {
-        setOrders((dbOrders as Order[]) || []);
+      if (dbOrders) {
+        setOrders(dbOrders as Order[]);
       }
 
       // Fetch Chassis
-      const { data: dbChassis, error: chassisErr } = await supabase
+      const { data: dbChassis } = await supabase
         .from('chassis')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!chassisErr) {
-        setChassisList((dbChassis as Chassis[]) || []);
+      if (dbChassis) {
+        setChassisList(dbChassis as Chassis[]);
       }
 
       // Fetch Addons
-      const { data: dbAddons, error: addonsErr } = await supabase
+      const { data: dbAddons } = await supabase
         .from('addons')
         .select('*')
         .order('sort_order', { ascending: true });
 
-      if (!addonsErr) {
-        setAddonsList((dbAddons as Addon[]) || []);
+      if (dbAddons) {
+        setAddonsList(dbAddons as Addon[]);
       }
 
       setIsSupabaseLive(true);
     } catch (err) {
-      console.error('Fetch error from Supabase sohub_admin:', err);
+      console.error('Fetch error from Supabase:', err);
     } finally {
       setIsSyncing(false);
     }
@@ -249,7 +249,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  // --- CHASSIS HANDLERS (FULL FIELDS SUPPORT) ---
+  // --- CHASSIS HANDLERS ---
   const saveChassis = async (chassisData: Partial<Chassis>) => {
     const payload = {
       title: chassisData.title || 'New Chassis Variant',
@@ -266,7 +266,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dimensions: '1920 x 1180 x 850 mm',
         temperature_range: '4°C - 25°C',
         power_consumption: '350W',
-        display_type: '21.5-inch Touchscreen',
+        display_type: '21.5" HD Touchscreen',
       },
     };
 
@@ -276,24 +276,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
       showToast(`Machine Model "${payload.title}" updated`);
       try {
-        await supabase
+        const res = await supabase
           .from('chassis')
           .update(payload)
           .eq('id', chassisData.id);
-      } catch (e) {
+        if (res?.error) {
+          console.error('Supabase update error:', res.error);
+          showToast(`Supabase error: ${res.error.message}`, 'error');
+        }
+      } catch (e: any) {
         console.error(e);
+        showToast(`Save Error: ${e.message || e}`, 'error');
       }
     } else {
+      const tempId = Math.random().toString(36).substring(2, 9);
+      const tempChassis = { id: tempId, ...payload, created_at: new Date().toISOString() } as Chassis;
+      setChassisList((prev) => [tempChassis, ...prev]);
+
       showToast(`New Machine Model "${payload.title}" created`);
       try {
-        const { data } = await supabase.from('chassis').insert([payload]).select();
-        if (data && data[0]) {
-          setChassisList((prev) => [data[0] as Chassis, ...prev]);
-        } else {
-          fetchFromSupabase();
+        const res = await supabase.from('chassis').insert([payload]).select();
+        if (res?.error) {
+          console.error('Supabase insert error:', res.error);
+          showToast(`Supabase Error: ${res.error.message}`, 'error');
+        } else if (res?.data && res.data[0]) {
+          setChassisList((prev) => prev.map((c) => (c.id === tempId ? (res.data[0] as Chassis) : c)));
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        showToast(`Save Error: ${e.message || e}`, 'error');
       }
     }
   };
@@ -327,48 +338,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // --- ADDON HANDLERS ---
   const saveAddon = async (addonData: Partial<Addon>) => {
+    const payload = {
+      name: addonData.name || 'New Add-on Upgrade',
+      description: addonData.description || 'Configurable upgrade option',
+      category: addonData.category || 'hardware',
+      price: addonData.price || 0,
+      is_tbd: !!addonData.is_tbd,
+      sort_order: addonData.sort_order || addonsList.length + 1,
+      is_active: addonData.is_active ?? true,
+      compatible_models: addonData.compatible_models || ['All'],
+    };
+
     if (addonData.id) {
       setAddonsList((prev) =>
-        prev.map((a) => (a.id === addonData.id ? ({ ...a, ...addonData } as Addon) : a))
+        prev.map((a) => (a.id === addonData.id ? ({ ...a, ...payload } as Addon) : a))
       );
-      showToast(`Add-on "${addonData.name}" updated`);
+      showToast(`Add-on "${payload.name}" updated`);
       try {
-        await supabase
+        const res = await supabase
           .from('addons')
-          .update({
-            name: addonData.name,
-            description: addonData.description,
-            category: addonData.category,
-            price: addonData.price,
-            is_tbd: addonData.is_tbd,
-            sort_order: addonData.sort_order,
-            compatible_models: addonData.compatible_models,
-          })
+          .update(payload)
           .eq('id', addonData.id);
-      } catch (e) {
+        if (res?.error) {
+          showToast(`Supabase error: ${res.error.message}`, 'error');
+        }
+      } catch (e: any) {
         console.error(e);
+        showToast(`Save Error: ${e.message || e}`, 'error');
       }
     } else {
-      const newAddon = {
-        name: addonData.name || 'New Add-on Upgrade',
-        description: addonData.description || 'Configurable upgrade option',
-        category: addonData.category || 'hardware',
-        price: addonData.price || 0,
-        is_tbd: !!addonData.is_tbd,
-        sort_order: addonData.sort_order || addonsList.length + 1,
-        is_active: true,
-        compatible_models: addonData.compatible_models || ['All'],
-      };
-      showToast(`Add-on "${newAddon.name}" created`);
+      const tempId = Math.random().toString(36).substring(2, 9);
+      const tempAddon = { id: tempId, ...payload } as Addon;
+      setAddonsList((prev) => [...prev, tempAddon]);
+
+      showToast(`Add-on "${payload.name}" created`);
       try {
-        const { data } = await supabase.from('addons').insert([newAddon]).select();
-        if (data && data[0]) {
-          setAddonsList((prev) => [...prev, data[0] as Addon]);
-        } else {
-          fetchFromSupabase();
+        const res = await supabase.from('addons').insert([payload]).select();
+        if (res?.error) {
+          showToast(`Supabase error: ${res.error.message}`, 'error');
+        } else if (res?.data && res.data[0]) {
+          setAddonsList((prev) => prev.map((a) => (a.id === tempId ? (res.data[0] as Addon) : a)));
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        showToast(`Save Error: ${e.message || e}`, 'error');
       }
     }
   };
