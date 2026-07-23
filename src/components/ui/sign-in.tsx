@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../../context/AppContext";
-import { Sparkles, ArrowRight, ShieldCheck, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export const LightLogin: React.FC = () => {
   const { login, showToast } = useApp();
@@ -20,14 +20,6 @@ export const LightLogin: React.FC = () => {
     if (!success) {
       setErrorMsg("Invalid credentials. Check your email or password.");
     }
-  };
-
-  const handleQuickDemoLogin = async () => {
-    setEmail("admin@sohub.com.bd");
-    setPassword("sohub123");
-    setLoading(true);
-    await login("admin@sohub.com.bd", "sohub123");
-    setLoading(false);
   };
 
   const handleForgotPassword = (e: React.MouseEvent) => {
@@ -51,16 +43,10 @@ export const LightLogin: React.FC = () => {
                 className="w-12 h-12 object-contain"
               />
             </div>
-            <div className="text-center space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 text-[#ff751a] font-mono text-[11px] font-bold border border-orange-200/60 mb-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> SOHUB Admin Portal v2.0
-              </div>
+            <div className="text-center">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Welcome Back
               </h2>
-              <p className="text-sm text-slate-500 font-medium">
-                Sign in to manage SOHUB Machines & Quotations
-              </p>
             </div>
           </div>
 
@@ -139,25 +125,6 @@ export const LightLogin: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Access Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-1 h-px bg-slate-200"></div>
-            <span className="px-3 text-xs text-slate-400 font-mono uppercase tracking-wider">
-              or demo access
-            </span>
-            <div className="flex-1 h-px bg-slate-200"></div>
-          </div>
-
-          {/* 1-Click Demo Login */}
-          <button
-            type="button"
-            onClick={handleQuickDemoLogin}
-            className="w-full h-12 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-xl flex items-center justify-center gap-2 text-xs font-extrabold transition-all cursor-pointer shadow-xs"
-          >
-            <Sparkles className="w-4 h-4 text-[#ff751a]" />
-            <span>1-Click Demo Login as Super Admin</span>
-          </button>
 
           {/* Footer Security Note */}
           <div className="mt-8 text-center border-t border-slate-100 pt-5">
