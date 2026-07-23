@@ -61,6 +61,21 @@ export const ConfiguratorModule: React.FC = () => {
       setEditingChassis({
         ...chassis,
         allowed_addons: chassis.allowed_addons || addonsList.map((a) => a.id),
+        specifications: {
+          slots: chassis.specifications?.slots || 48,
+          capacity: chassis.specifications?.capacity || '300 SKU 6 Layers',
+          dimensions: chassis.specifications?.dimensions || '183cm × 75cm × 78cm',
+          temperature_range: chassis.specifications?.temperature_range || '4-25°C',
+          power_consumption: chassis.specifications?.power_consumption || '220V / 460W (Chiller)',
+          display_type: chassis.specifications?.display_type || '10-inch Touchscreen, Android 11',
+          spring: chassis.specifications?.spring || 'Single & Double',
+          product: chassis.specifications?.product || 'Snacks and Drinks',
+          gas: chassis.specifications?.gas || 'R290',
+          connectivity: chassis.specifications?.connectivity || '4G SIM + WiFi',
+          payment: chassis.specifications?.payment || 'Cashless Payment',
+          material: chassis.specifications?.material || 'Metal, Glass & PVC',
+          gross_weight: chassis.specifications?.gross_weight || '250 kg',
+        },
       });
       setImageInputMode(chassis.image_url?.startsWith('data:') ? 'file' : 'url');
     } else {
@@ -75,11 +90,18 @@ export const ConfiguratorModule: React.FC = () => {
         allowed_addons: addonsList.map((a) => a.id),
         specifications: {
           slots: 48,
-          capacity: '400 Items',
-          dimensions: '1920 x 1180 x 850 mm',
-          temperature_range: '4°C - 25°C',
-          power_consumption: '350W',
-          display_type: '21.5" HD Touchscreen',
+          capacity: '300 SKU 6 Layers',
+          dimensions: '183cm × 75cm × 78cm',
+          temperature_range: '4-25°C',
+          power_consumption: '220V / 460W (Chiller)',
+          display_type: '10-inch Touchscreen, Android 11',
+          spring: 'Single & Double',
+          product: 'Snacks and Drinks',
+          gas: 'R290',
+          connectivity: '4G SIM + WiFi',
+          payment: 'Cashless Payment',
+          material: 'Metal, Glass & PVC',
+          gross_weight: '250 kg',
         },
       });
       setImageInputMode('file');
@@ -171,7 +193,7 @@ export const ConfiguratorModule: React.FC = () => {
             Configurator & Pricing Manager
           </h1>
           <p className="text-slate-500 text-xs">
-            Manage machine models, local image upload from PC, allowed add-ons, specifications, and website visibility.
+            Manage machine models, local image upload from PC, allowed add-ons, full specifications, and website visibility.
           </p>
         </div>
 
@@ -309,11 +331,11 @@ export const ConfiguratorModule: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 font-medium">
                     <div className="bg-slate-100/60 p-2 rounded-lg">
                       <span className="block text-slate-400">Capacity</span>
-                      <span className="font-bold text-slate-800">{chassis.specifications?.capacity || '300 Items'}</span>
+                      <span className="font-bold text-slate-800">{chassis.specifications?.capacity || '300 SKU'}</span>
                     </div>
                     <div className="bg-slate-100/60 p-2 rounded-lg">
-                      <span className="block text-slate-400">Slots</span>
-                      <span className="font-bold text-slate-800">{chassis.specifications?.slots || 40} Selection</span>
+                      <span className="block text-slate-400">Display</span>
+                      <span className="font-bold text-slate-800 truncate block">{chassis.specifications?.display_type || '10-inch'}</span>
                     </div>
                   </div>
 
@@ -560,16 +582,16 @@ export const ConfiguratorModule: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* RICH MODAL: CREATE / EDIT MACHINE VARIANT (Includes Local PC Image Upload & Real-Time Preview) */}
+      {/* RICH MODAL: CREATE / EDIT MACHINE VARIANT (With All 12+ Machine Specifications) */}
       {/* ========================================================================= */}
       {isChassisModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl animate-scale-up border border-slate-200">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 space-y-5 shadow-2xl animate-scale-up border border-slate-200 my-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <Box className="w-5 h-5 text-[#ff751a]" />
                 <h3 className="text-base font-extrabold text-slate-900">
-                  {editingChassis.id ? 'Edit Machine Model' : 'Create Machine Variant'}
+                  {editingChassis.id ? 'Edit Machine Model & Specifications' : 'Create Machine Variant'}
                 </h3>
               </div>
               <button
@@ -753,15 +775,58 @@ export const ConfiguratorModule: React.FC = () => {
                 />
               </div>
 
-              {/* Row 4: Key Specifications Grid */}
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1">
-                  <Settings2 className="w-3.5 h-3.5 text-[#ff751a]" /> 6. Key Specifications (Viewed by customer)
-                </span>
+              {/* Row 4: Comprehensive Specifications Grid (12+ Fields matching Website) */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                    <Settings2 className="w-4 h-4 text-[#ff751a]" /> 6. Full Machine Specifications (API Driven)
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono font-bold bg-white px-2 py-0.5 rounded border border-slate-200">
+                    12 Dynamic Options
+                  </span>
+                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Capacity</label>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Dimensions</label>
+                    <input
+                      type="text"
+                      value={editingChassis.specifications?.dimensions || ''}
+                      onChange={(e) =>
+                        setEditingChassis({
+                          ...editingChassis,
+                          specifications: {
+                            ...editingChassis.specifications!,
+                            dimensions: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="183cm × 75cm × 78cm"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Display Screen</label>
+                    <input
+                      type="text"
+                      value={editingChassis.specifications?.display_type || ''}
+                      onChange={(e) =>
+                        setEditingChassis({
+                          ...editingChassis,
+                          specifications: {
+                            ...editingChassis.specifications!,
+                            display_type: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="10-inch Touchscreen, Android 11"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Capacity</label>
                     <input
                       type="text"
                       value={editingChassis.specifications?.capacity || ''}
@@ -774,16 +839,16 @@ export const ConfiguratorModule: React.FC = () => {
                           },
                         })
                       }
-                      placeholder="400 Items"
+                      placeholder="300 SKU 6 Layers"
                       className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Selection Slots</label>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Selection Slots</label>
                     <input
                       type="number"
-                      value={editingChassis.specifications?.slots || 40}
+                      value={editingChassis.specifications?.slots || 48}
                       onChange={(e) =>
                         setEditingChassis({
                           ...editingChassis,
@@ -799,45 +864,45 @@ export const ConfiguratorModule: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Dimensions</label>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Spring Type</label>
                     <input
                       type="text"
-                      value={editingChassis.specifications?.dimensions || ''}
+                      value={editingChassis.specifications?.spring || ''}
                       onChange={(e) =>
                         setEditingChassis({
                           ...editingChassis,
                           specifications: {
                             ...editingChassis.specifications!,
-                            dimensions: e.target.value,
+                            spring: e.target.value,
                           },
                         })
                       }
-                      placeholder="1920 x 1180 x 850 mm"
+                      placeholder="Single & Double"
                       className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Power Consumption</label>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Compatible Products</label>
                     <input
                       type="text"
-                      value={editingChassis.specifications?.power_consumption || ''}
+                      value={editingChassis.specifications?.product || ''}
                       onChange={(e) =>
                         setEditingChassis({
                           ...editingChassis,
                           specifications: {
                             ...editingChassis.specifications!,
-                            power_consumption: e.target.value,
+                            product: e.target.value,
                           },
                         })
                       }
-                      placeholder="350W"
+                      placeholder="Snacks and Drinks"
                       className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Temp Range</label>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Chiller Temperature</label>
                     <input
                       type="text"
                       value={editingChassis.specifications?.temperature_range || ''}
@@ -850,26 +915,121 @@ export const ConfiguratorModule: React.FC = () => {
                           },
                         })
                       }
-                      placeholder="4°C - 25°C"
+                      placeholder="4-25°C"
                       className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Display Screen</label>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Refrigerant Gas</label>
                     <input
                       type="text"
-                      value={editingChassis.specifications?.display_type || ''}
+                      value={editingChassis.specifications?.gas || ''}
                       onChange={(e) =>
                         setEditingChassis({
                           ...editingChassis,
                           specifications: {
                             ...editingChassis.specifications!,
-                            display_type: e.target.value,
+                            gas: e.target.value,
                           },
                         })
                       }
-                      placeholder='21.5" HD Touchscreen'
+                      placeholder="R290"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Connectivity</label>
+                    <input
+                      type="text"
+                      value={editingChassis.specifications?.connectivity || ''}
+                      onChange={(e) =>
+                        setEditingChassis({
+                          ...editingChassis,
+                          specifications: {
+                            ...editingChassis.specifications!,
+                            connectivity: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="4G SIM + WiFi"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Payment Support</label>
+                    <input
+                      type="text"
+                      value={editingChassis.specifications?.payment || ''}
+                      onChange={(e) =>
+                        setEditingChassis({
+                          ...editingChassis,
+                          specifications: {
+                            ...editingChassis.specifications!,
+                            payment: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Cashless Payment"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Power Consumption</label>
+                    <input
+                      type="text"
+                      value={editingChassis.specifications?.power_consumption || ''}
+                      onChange={(e) =>
+                        setEditingChassis({
+                          ...editingChassis,
+                          specifications: {
+                            ...editingChassis.specifications!,
+                            power_consumption: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="220V / 460W (Chiller)"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Gross Weight</label>
+                    <input
+                      type="text"
+                      value={editingChassis.specifications?.gross_weight || ''}
+                      onChange={(e) =>
+                        setEditingChassis({
+                          ...editingChassis,
+                          specifications: {
+                            ...editingChassis.specifications!,
+                            gross_weight: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="250 kg"
+                      className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 lg:col-span-3">
+                    <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Cabinet & Frame Material</label>
+                    <input
+                      type="text"
+                      value={editingChassis.specifications?.material || ''}
+                      onChange={(e) =>
+                        setEditingChassis({
+                          ...editingChassis,
+                          specifications: {
+                            ...editingChassis.specifications!,
+                            material: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Metal, Glass & PVC"
                       className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white font-bold"
                     />
                   </div>

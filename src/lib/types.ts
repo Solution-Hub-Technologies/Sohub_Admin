@@ -1,5 +1,21 @@
 export type ChassisType = 'imported' | 'local';
 
+export interface Specifications {
+  slots: number;
+  capacity: string;
+  dimensions: string;
+  temperature_range: string;
+  power_consumption: string;
+  display_type?: string;
+  spring?: string;
+  product?: string;
+  gas?: string;
+  connectivity?: string;
+  payment?: string;
+  material?: string;
+  gross_weight?: string;
+}
+
 export interface Chassis {
   id: string;
   title: string;
@@ -11,14 +27,7 @@ export interface Chassis {
   is_active: boolean;
   allowed_addons?: string[]; // Array of allowed add-on names or IDs
   created_at: string;
-  specifications: {
-    slots: number;
-    capacity: string;
-    dimensions: string;
-    temperature_range: string;
-    power_consumption: string;
-    display_type?: string;
-  };
+  specifications: Specifications;
 }
 
 export interface Addon {
