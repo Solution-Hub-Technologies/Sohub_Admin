@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Chassis, Addon, Order, GlobalSettings, OrderStatus } from '../lib/types';
-import { INITIAL_SETTINGS } from '../lib/mockData';
+import { INITIAL_SETTINGS, INITIAL_ADDONS, INITIAL_CHASSIS } from '../lib/mockData';
 import { supabase, clearAllSupabaseTables } from '../lib/supabase';
 
 export type NavTab = 'orders' | 'configurator';
@@ -66,9 +66,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Initial state strictly from database
-  const [chassisList, setChassisList] = useState<Chassis[]>([]);
-  const [addonsList, setAddonsList] = useState<Addon[]>([]);
+  // Initial state strictly from database or initial master data
+  const [chassisList, setChassisList] = useState<Chassis[]>(INITIAL_CHASSIS);
+  const [addonsList, setAddonsList] = useState<Addon[]>(INITIAL_ADDONS);
   const [orders, setOrders] = useState<Order[]>([]);
 
   const [settings, setSettings] = useState<GlobalSettings>(() => {
@@ -135,7 +135,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (dbChassis) {
+      if (dbChassis && dbChassis.length > 0) {
         setChassisList(dbChassis as Chassis[]);
       }
 
@@ -145,8 +145,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('sort_order', { ascending: true });
 
-      if (dbAddons) {
+      if (dbAddons && dbAddons.length > 0) {
         setAddonsList(dbAddons as Addon[]);
+      } else {
+        // Seed default 10 master add-ons if database table is empty
+        setAddonsList(INITIAL_ADDONS);
+        try {
+          await supabase.from('addons').insert(
+            INITIAL_ADDONS.map(({ id, ...rest }) => ({
+              ...rest,
+            }))
+          );
+        } catch (e) {
+          console.warn('Initial addons seeding note:', e);
+        }
       }
 
       setIsSupabaseLive(true);
@@ -281,7 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .update(payload)
           .eq('id', chassisData.id);
         if (res?.error) {
-          console.error('Supabase update error:', res.error.message, res.error.details, res.error.hint);
+          console.error('Supabase update error:', res.error.message);
           showToast(`Supabase error: ${res.error.message}`, 'error');
         }
       } catch (e: any) {
@@ -297,7 +309,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const res = await supabase.from('chassis').insert([payload]).select();
         if (res?.error) {
-          console.error('Supabase insert error details:', res.error.message, res.error.details, res.error.hint);
+          console.error('Supabase insert error details:', res.error.message);
           showToast(`Supabase Error: ${res.error.message}`, 'error');
         } else if (res?.data && res.data[0]) {
           setChassisList((prev) => prev.map((c) => (c.id === tempId ? (res.data[0] as Chassis) : c)));
