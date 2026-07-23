@@ -21,6 +21,7 @@ import {
   Upload,
   Link as LinkIcon,
   X,
+  AlertCircle,
 } from 'lucide-react';
 
 export const ConfiguratorModule: React.FC = () => {
@@ -43,6 +44,7 @@ export const ConfiguratorModule: React.FC = () => {
   const [isChassisModalOpen, setIsChassisModalOpen] = useState<boolean>(false);
   const [editingChassis, setEditingChassis] = useState<Partial<Chassis>>({});
   const [imageInputMode, setImageInputMode] = useState<'file' | 'url'>('file');
+  const [imagePreviewError, setImagePreviewError] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Modal State for Addon
@@ -54,6 +56,7 @@ export const ConfiguratorModule: React.FC = () => {
 
   // --- Chassis Modal Open Helper ---
   const handleOpenChassisModal = (chassis?: Chassis) => {
+    setImagePreviewError(false);
     if (chassis) {
       setEditingChassis({
         ...chassis,
@@ -98,6 +101,7 @@ export const ConfiguratorModule: React.FC = () => {
         alert('Image file size exceeds 5MB limit.');
         return;
       }
+      setImagePreviewError(false);
       const reader = new FileReader();
       reader.onloadend = () => {
         setEditingChassis((prev) => ({
@@ -156,7 +160,7 @@ export const ConfiguratorModule: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 select-none">
       {/* Banner Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-subtle">
         <div>
@@ -175,7 +179,7 @@ export const ConfiguratorModule: React.FC = () => {
         <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab('machines')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'machines'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -186,7 +190,7 @@ export const ConfiguratorModule: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('addons')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'addons'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -197,7 +201,7 @@ export const ConfiguratorModule: React.FC = () => {
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'settings'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -219,7 +223,7 @@ export const ConfiguratorModule: React.FC = () => {
             </h2>
             <button
               onClick={() => handleOpenChassisModal()}
-              className="px-4 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center gap-1.5"
+              className="px-4 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Create Machine Variant
             </button>
@@ -233,7 +237,7 @@ export const ConfiguratorModule: React.FC = () => {
                 <p className="text-xs text-slate-400 mb-4">Click below to upload images and create your first machine variant.</p>
                 <button
                   onClick={() => handleOpenChassisModal()}
-                  className="px-4 py-2 bg-[#ff751a] text-white text-xs font-bold rounded-xl"
+                  className="px-4 py-2 bg-[#ff751a] text-white text-xs font-bold rounded-xl cursor-pointer"
                 >
                   Create Machine Variant
                 </button>
@@ -248,7 +252,7 @@ export const ConfiguratorModule: React.FC = () => {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      {chassis.image_url ? (
+                      {chassis.image_url && chassis.image_url.trim() !== '' ? (
                         <img
                           src={chassis.image_url}
                           alt={chassis.title}
@@ -279,6 +283,7 @@ export const ConfiguratorModule: React.FC = () => {
                     <button
                       onClick={() => toggleChassisStatus(chassis.id)}
                       title="Active on Website Switch"
+                      className="cursor-pointer"
                     >
                       {chassis.is_active ? (
                         <ToggleRight className="w-6 h-6 text-[#ff751a]" />
@@ -315,13 +320,13 @@ export const ConfiguratorModule: React.FC = () => {
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                     <button
                       onClick={() => handleOpenChassisModal(chassis)}
-                      className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1 transition-colors"
+                      className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <Edit2 className="w-3.5 h-3.5 text-slate-500" /> Edit Model & Specs
                     </button>
                     <button
                       onClick={() => deleteChassis(chassis.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -342,7 +347,7 @@ export const ConfiguratorModule: React.FC = () => {
             </h2>
             <button
               onClick={() => handleOpenAddonModal()}
-              className="px-4 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center gap-1.5"
+              className="px-4 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" /> Add New Upgrade
             </button>
@@ -390,7 +395,7 @@ export const ConfiguratorModule: React.FC = () => {
                       <td className="py-4 px-4">
                         <button
                           onClick={() => toggleAddonStatus(addon.id)}
-                          className="flex items-center gap-1.5"
+                          className="flex items-center gap-1.5 cursor-pointer"
                         >
                           {addon.is_active ? (
                             <>
@@ -408,13 +413,13 @@ export const ConfiguratorModule: React.FC = () => {
                       <td className="py-4 px-4 text-right space-x-2">
                         <button
                           onClick={() => handleOpenAddonModal(addon)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors"
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors cursor-pointer"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => deleteAddon(addon.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                          className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -546,7 +551,7 @@ export const ConfiguratorModule: React.FC = () => {
           <div>
             <button
               type="submit"
-              className="w-full py-3 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" /> Save Bank & Calculation Rules
             </button>
@@ -555,7 +560,7 @@ export const ConfiguratorModule: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* RICH MODAL: CREATE / EDIT MACHINE VARIANT (Includes Local PC Image Upload) */}
+      {/* RICH MODAL: CREATE / EDIT MACHINE VARIANT (Includes Local PC Image Upload & Real-Time Preview) */}
       {/* ========================================================================= */}
       {isChassisModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -569,7 +574,7 @@ export const ConfiguratorModule: React.FC = () => {
               </div>
               <button
                 onClick={() => setIsChassisModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -639,7 +644,7 @@ export const ConfiguratorModule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setImageInputMode('file')}
-                        className={`px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                        className={`px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer ${
                           imageInputMode === 'file'
                             ? 'bg-white text-slate-900 shadow-2xs'
                             : 'text-slate-500'
@@ -650,7 +655,7 @@ export const ConfiguratorModule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setImageInputMode('url')}
-                        className={`px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                        className={`px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer ${
                           imageInputMode === 'url'
                             ? 'bg-white text-slate-900 shadow-2xs'
                             : 'text-slate-500'
@@ -673,38 +678,61 @@ export const ConfiguratorModule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex-1 py-2 px-3 border-2 border-dashed border-slate-300 hover:border-[#ff751a] bg-slate-50 hover:bg-orange-50/40 rounded-xl flex items-center justify-center gap-2 text-slate-600 hover:text-[#ff751a] font-bold transition-all"
+                        className="flex-1 py-2 px-3 border-2 border-dashed border-slate-300 hover:border-[#ff751a] bg-slate-50 hover:bg-orange-50/40 rounded-xl flex items-center justify-center gap-2 text-slate-600 hover:text-[#ff751a] font-bold transition-all cursor-pointer"
                       >
                         <Upload className="w-4 h-4 text-[#ff751a]" /> Choose Image from PC
                       </button>
-
-                      {editingChassis.image_url && (
-                        <div className="relative group shrink-0">
-                          <img
-                            src={editingChassis.image_url}
-                            alt="Preview"
-                            className="w-10 h-10 object-cover rounded-lg border border-slate-200"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setEditingChassis({ ...editingChassis, image_url: '' })}
-                            className="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full p-0.5 shadow-xs"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <input
                       type="url"
                       value={editingChassis.image_url || ''}
-                      onChange={(e) =>
-                        setEditingChassis({ ...editingChassis, image_url: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setImagePreviewError(false);
+                        setEditingChassis({ ...editingChassis, image_url: e.target.value });
+                      }}
                       placeholder="https://machines.sohub.com.bd/assets/vending-v45.png"
                       className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#ff751a] focus:outline-none font-mono"
                     />
+                  )}
+
+                  {/* Clean Image Preview Container */}
+                  {editingChassis.image_url && editingChassis.image_url.trim() !== '' && (
+                    <div className="relative mt-2 p-2 bg-slate-900 rounded-xl border border-slate-800 flex items-center gap-3">
+                      {!imagePreviewError ? (
+                        <img
+                          src={editingChassis.image_url}
+                          alt="Preview"
+                          onError={() => setImagePreviewError(true)}
+                          className="w-16 h-16 object-cover rounded-lg border border-slate-700 bg-slate-950 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center font-bold text-[10px] text-center p-1 shrink-0">
+                          <AlertCircle className="w-5 h-5 text-rose-400" />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0 text-white">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-amber-400 truncate">
+                            {imagePreviewError ? 'Invalid Image Link' : 'Image Preview Loaded'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImagePreviewError(false);
+                              setEditingChassis({ ...editingChassis, image_url: '' });
+                            }}
+                            className="text-slate-400 hover:text-rose-400 p-1 rounded cursor-pointer"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-400 truncate font-mono mt-0.5">
+                          {editingChassis.image_url.substring(0, 40)}...
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -866,7 +894,7 @@ export const ConfiguratorModule: React.FC = () => {
                           key={addon.id}
                           type="button"
                           onClick={() => handleAddonCheckboxToggle(addon.id)}
-                          className={`flex items-center gap-2 p-2 rounded-lg text-left transition-colors ${
+                          className={`flex items-center gap-2 p-2 rounded-lg text-left transition-colors cursor-pointer ${
                             isChecked
                               ? 'bg-orange-50 border border-orange-200 text-slate-900 font-bold'
                               : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -895,9 +923,9 @@ export const ConfiguratorModule: React.FC = () => {
                     onChange={(e) =>
                       setEditingChassis({ ...editingChassis, chiller_support: e.target.checked })
                     }
-                    className="rounded text-[#ff751a] focus:ring-[#ff751a]"
+                    className="rounded text-[#ff751a] focus:ring-[#ff751a] cursor-pointer"
                   />
-                  <label htmlFor="modal_chiller_support" className="font-bold text-slate-700">
+                  <label htmlFor="modal_chiller_support" className="font-bold text-slate-700 cursor-pointer">
                     Chiller Unit Supported
                   </label>
                 </div>
@@ -908,7 +936,7 @@ export const ConfiguratorModule: React.FC = () => {
                     onClick={() =>
                       setEditingChassis({ ...editingChassis, is_active: !editingChassis.is_active })
                     }
-                    className="flex items-center gap-1.5 font-bold"
+                    className="flex items-center gap-1.5 font-bold cursor-pointer"
                   >
                     {editingChassis.is_active ?? true ? (
                       <>
@@ -930,13 +958,13 @@ export const ConfiguratorModule: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsChassisModalOpen(false)}
-                  className="px-4 py-2 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl"
+                  className="px-4 py-2 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white font-extrabold rounded-xl shadow-brand"
+                  className="px-6 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white font-extrabold rounded-xl shadow-brand cursor-pointer"
                 >
                   Save Machine Variant
                 </button>
@@ -989,9 +1017,9 @@ export const ConfiguratorModule: React.FC = () => {
                       onChange={(e) =>
                         setEditingAddon({ ...editingAddon, is_tbd: e.target.checked })
                       }
-                      className="rounded text-[#ff751a] focus:ring-[#ff751a]"
+                      className="rounded text-[#ff751a] focus:ring-[#ff751a] cursor-pointer"
                     />
-                    <label htmlFor="is_tbd" className="font-bold text-slate-700">
+                    <label htmlFor="is_tbd" className="font-bold text-slate-700 cursor-pointer">
                       TBD (Custom Quote)
                     </label>
                   </div>
@@ -1019,13 +1047,13 @@ export const ConfiguratorModule: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAddonModalOpen(false)}
-                  className="px-4 py-2 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl"
+                  className="px-4 py-2 text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white font-extrabold rounded-xl shadow-brand"
+                  className="px-5 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white font-extrabold rounded-xl shadow-brand cursor-pointer"
                 >
                   Save Upgrade
                 </button>
