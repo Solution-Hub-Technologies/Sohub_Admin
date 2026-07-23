@@ -3,16 +3,13 @@ import { useApp, NavTab } from '../../context/AppContext';
 import {
   FileSpreadsheet,
   Sliders,
-  Users,
-  Building2,
   ChevronDown,
   Sparkles,
   Database,
-  ShieldCheck,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, orders, usersList } = useApp();
+  const { activeTab, setActiveTab, orders } = useApp();
 
   const pendingOrdersCount = orders.filter((o) => o.status === 'Pending').length;
 
@@ -27,17 +24,6 @@ export const Sidebar: React.FC = () => {
       id: 'configurator',
       label: 'Configurator & Pricing',
       icon: <Sliders className="w-4 h-4" />,
-    },
-    {
-      id: 'users',
-      label: 'User & Team Access',
-      icon: <Users className="w-4 h-4" />,
-      badge: usersList.length,
-    },
-    {
-      id: 'settings',
-      label: 'Bank & Quotation Rules',
-      icon: <Building2 className="w-4 h-4" />,
     },
   ];
 
@@ -63,11 +49,11 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Links */}
+      {/* Navigation Links (Streamlined 2 Core Consoles Only) */}
       <div className="flex-1 py-4 px-3 space-y-6 overflow-y-auto">
         <div>
           <div className="px-3 mb-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-500 flex items-center justify-between">
-            <span>Control Console</span>
+            <span>Main Console</span>
             <Sparkles className="w-3 h-3 text-[#ff751a]" />
           </div>
 
@@ -94,7 +80,7 @@ export const Sidebar: React.FC = () => {
                       className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                         isActive
                           ? 'bg-white text-[#ff751a]'
-                          : 'bg-slate-800 text-slate-300 border border-slate-700'
+                          : 'bg-[#ff751a] text-white'
                       }`}
                     >
                       {item.badge}
@@ -107,11 +93,11 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Database Schema & Auth Footer */}
+      {/* Database Schema Footer */}
       <div className="p-4 border-t border-slate-800 bg-slate-950/60 space-y-2">
         <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
           <span className="flex items-center gap-1.5 font-bold">
-            <Database className="w-3.5 h-3.5 text-[#ff751a]" /> Schema:
+            <Database className="w-3.5 h-3.5 text-[#ff751a]" /> DB Schema:
           </span>
           <span className="px-2 py-0.5 rounded bg-slate-800 text-emerald-400 font-extrabold border border-slate-700">
             sohub_admin
