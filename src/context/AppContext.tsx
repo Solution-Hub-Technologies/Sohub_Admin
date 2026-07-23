@@ -89,7 +89,12 @@ const DEFAULT_USERS: AdminUser[] = [
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activeTab, setActiveTab] = useState<NavTab>('orders');
+  // Navigation State with localStorage persistence
+  const [activeTab, setActiveTab] = useState<NavTab>(() => {
+    const savedTab = localStorage.getItem('sohub_active_tab');
+    return (savedTab as NavTab) || 'orders';
+  });
+
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
@@ -126,6 +131,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(true);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  // Persist Active Tab across page reloads
+  useEffect(() => {
+    localStorage.setItem('sohub_active_tab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     localStorage.setItem('sohub_settings', JSON.stringify(settings));
