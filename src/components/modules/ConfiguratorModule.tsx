@@ -138,6 +138,53 @@ export const ConfiguratorModule: React.FC = () => {
     }
   };
 
+  // Build Type change handler with automatic specs prefilling
+  const handleBuildTypeChange = (newType: 'imported' | 'local') => {
+    if (newType === 'local') {
+      setEditingChassis((prev) => ({
+        ...prev,
+        type: 'local',
+        specifications: {
+          ...prev.specifications,
+          capacity: '200-300 SKU',
+          product: 'Snacks and Drinks',
+          connectivity: 'WiFi',
+          material: 'Metal + Glass',
+          dimensions: '183cm × 75cm × 78cm',
+          payment: 'Cashless Payment Only',
+          slots: prev.specifications?.slots || 48,
+          temperature_range: prev.specifications?.temperature_range || '4-25°C',
+          power_consumption: prev.specifications?.power_consumption || '220V / 460W (Chiller)',
+          display_type: prev.specifications?.display_type || '10-inch Touchscreen, Android 11',
+          spring: prev.specifications?.spring || 'Single & Double',
+          gas: prev.specifications?.gas || 'R290',
+          gross_weight: prev.specifications?.gross_weight || '250 kg',
+        },
+      }));
+    } else {
+      setEditingChassis((prev) => ({
+        ...prev,
+        type: 'imported',
+        specifications: {
+          ...prev.specifications,
+          capacity: '300 SKU 6 Layers',
+          product: 'Snacks and Drinks',
+          connectivity: '4G SIM + WiFi',
+          material: 'Metal, Glass & PVC',
+          dimensions: '183cm × 75cm × 78cm',
+          payment: 'Cashless Payment',
+          slots: prev.specifications?.slots || 48,
+          temperature_range: prev.specifications?.temperature_range || '4-25°C',
+          power_consumption: prev.specifications?.power_consumption || '220V / 460W (Chiller)',
+          display_type: prev.specifications?.display_type || '10-inch Touchscreen, Android 11',
+          spring: prev.specifications?.spring || 'Single & Double',
+          gas: prev.specifications?.gas || 'R290',
+          gross_weight: prev.specifications?.gross_weight || '250 kg',
+        },
+      }));
+    }
+  };
+
   const handleAddonCheckboxToggle = (addonId: string) => {
     const current = editingChassis.allowed_addons || [];
     const exists = current.includes(addonId);
@@ -676,9 +723,7 @@ export const ConfiguratorModule: React.FC = () => {
                   </label>
                   <select
                     value={editingChassis.type || 'imported'}
-                    onChange={(e) =>
-                      setEditingChassis({ ...editingChassis, type: e.target.value as any })
-                    }
+                    onChange={(e) => handleBuildTypeChange(e.target.value as any)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#ff751a] focus:outline-none font-bold"
                   >
                     <option value="imported">Imported Chassis</option>
