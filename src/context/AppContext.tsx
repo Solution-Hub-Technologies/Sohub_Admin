@@ -69,7 +69,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Strict Database-only Initial States (Empty arrays)
+  // Strict Database-only Initial States
   const [chassisList, setChassisList] = useState<Chassis[]>([]);
   const [addonsList, setAddonsList] = useState<Addon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);

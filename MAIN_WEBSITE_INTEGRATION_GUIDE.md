@@ -1,37 +1,33 @@
-# 🚀 SOHUB Vending Machine - Main Website Integration Guide
+# 🚀 SOHUB Vending Machine - Dynamic Integration Guide
 > **Target Website:** `machines.sohub.com.bd`  
 > **Backend Admin API Base URL:** `https://sohub-admin.vercel.app/api`  
-> **Status:** Live & Production Ready (Zero Config Required)
+> **Architecture:** Pure Machine-Driven Add-on Configurator
 
 ---
 
-## 📌 1. Architecture Overview
+## 📌 1. Dynamic Architecture Overview
 
-The main website (`machines.sohub.com.bd`) fetches real-time machine variants, master add-ons, and sends quotation leads directly to the **SOHUB Admin Panel** via Vercel Serverless REST Endpoints.
+In this clean architecture, the main website (`machines.sohub.com.bd`) fetches **only the Machine Variants** created in the Admin Panel. 
+
+Each Machine Variant contains its own list of **`allowed_addons`** (configured inside the Admin Panel modal). When a customer selects a specific machine model on the main website, **only the add-ons enabled for that machine** will be displayed for selection!
 
 ```mermaid
-graph LR
-    A["Main Website (machines.sohub.com.bd)"] -->|"GET /api/machines"| B["SOHUB Admin API"]
-    A -->|"GET /api/addons"| B
-    A -->|"POST /api/submit-order"| B
-    B --> C[(Supabase Database)]
-    B --> D["Admin Dashboard (sohub-admin.vercel.app)"]
+graph TD
+    A["Main Website (machines.sohub.com.bd)"] -->|"1. GET /api/machines"| B["SOHUB Admin API"]
+    B -->|"Returns Active Machines & Allowed Addons"| A
+    A -->|"2. User Clicks Machine Model"| C["Render Allowed Add-ons for Selected Machine"]
+    A -->|"3. Submit Order Leads (POST /api/submit-order)"| B
 ```
-
-### Key Advantages:
-- 🔒 **Zero Public Credentials:** No API keys or Supabase credentials are required on `machines.sohub.com.bd`.
-- ⚡ **Instant Synchronization:** When you add/edit a machine model or add-on in the Admin Panel, it updates on the main website instantly.
-- 📬 **Automated Order Tracking:** All customer requests generate a unique order number (`SHB-XXXXXX`) and appear directly on the Admin Dashboard.
 
 ---
 
-## 📡 2. REST API Endpoints Reference
+## 📡 2. API Endpoint Reference
 
-### 1️⃣ Get Active Machine Variants
+### 1️⃣ Fetch Active Machine Variants
 - **Endpoint:** `GET https://sohub-admin.vercel.app/api/machines`
-- **Description:** Returns all active machine models created in the Admin Configurator.
+- **Description:** Returns all active machine models along with their technical specifications and allowed add-ons.
 
-#### Sample Response:
+#### Sample JSON Response:
 ```json
 [
   {
@@ -43,7 +39,20 @@ graph LR
     "image_url": "https://machines.sohub.com.bd/assets/vending-v45.png",
     "chiller_support": true,
     "is_active": true,
-    "allowed_addons": ["addon-1", "addon-2", "addon-3"],
+    "allowed_addons": [
+      {
+        "addon_id": "chiller-unit",
+        "name": "Built-in Chiller Unit",
+        "price": 40000,
+        "description": "Refrigeration module (4°C - 25°C)."
+      },
+      {
+        "addon_id": "touchscreen-upgrade",
+        "name": "Touchscreen Display Upgrade",
+        "price": 18000,
+        "description": "10-inch interactive HD touchscreen display."
+      }
+    ],
     "specifications": {
       "slots": 60,
       "capacity": "450 Snacks & Drinks",
@@ -58,42 +67,9 @@ graph LR
 
 ---
 
-### 2️⃣ Get Master Add-ons List
-- **Endpoint:** `GET https://sohub-admin.vercel.app/api/addons`
-- **Description:** Returns all active official master add-on upgrades.
-
-#### Sample Response:
-```json
-[
-  {
-    "id": "addon-1",
-    "name": "Built-in Chiller Unit",
-    "description": "Refrigeration module for cold beverages, chocolates, and dairy products (4°C - 25°C).",
-    "category": "hardware",
-    "price": 40000,
-    "is_tbd": false,
-    "sort_order": 1,
-    "is_active": true
-  },
-  {
-    "id": "addon-7",
-    "name": "Cashless Payment Gateway Integration",
-    "description": "bKash, Nagad, SSLCommerz, NFC Card, & Student/Employee ID Card payment integration.",
-    "category": "payment",
-    "price": 0,
-    "is_tbd": true,
-    "sort_order": 7,
-    "is_active": true
-  }
-]
-```
-
----
-
-### 3️⃣ Submit Customer Quotation Lead
+### 2️⃣ Submit Customer Order Lead
 - **Endpoint:** `POST https://sohub-admin.vercel.app/api/submit-order`
 - **Content-Type:** `application/json`
-- **Description:** Submits customer contact details and machine choices to the Admin Panel.
 
 #### Request Body Payload:
 ```json
@@ -107,210 +83,147 @@ graph LR
   "chassis_base_price": 380000,
   "selected_addons": [
     {
-      "addon_id": "addon-1",
+      "addon_id": "chiller-unit",
       "addon_name": "Built-in Chiller Unit",
       "final_price": 40000
-    },
-    {
-      "addon_id": "addon-3",
-      "addon_name": "POS Payment Module (EBL POS)",
-      "final_price": 10000
     }
   ],
-  "subtotal": 430000,
+  "subtotal": 420000,
   "vat_rate": 5
 }
 ```
 
-#### Sample Response:
-```json
-{
-  "success": true,
-  "message": "Order inquiry received successfully!",
-  "order_number": "SHB-849201"
-}
-```
-
 ---
 
-## 💻 3. Implementation Code for `machines.sohub.com.bd`
+## 💻 3. React Frontend Integration Example (`SnackVendingPage.tsx`)
 
-Create a helper file in your main website project: `src/services/sohubAdminService.js`
-
-```javascript
-// src/services/sohubAdminService.js
-const ADMIN_API_BASE = 'https://sohub-admin.vercel.app/api';
-
-/**
- * 1. Fetch active machine models
- */
-export async function fetchMachineVariants() {
-  try {
-    const res = await fetch(`${ADMIN_API_BASE}/machines`);
-    if (!res.ok) throw new Error('Failed to load machine variants');
-    return await res.json();
-  } catch (error) {
-    console.error('Error in fetchMachineVariants:', error);
-    return [];
-  }
-}
-
-/**
- * 2. Fetch master add-on upgrades
- */
-export async function fetchMasterAddons() {
-  try {
-    const res = await fetch(`${ADMIN_API_BASE}/addons`);
-    if (!res.ok) throw new Error('Failed to load master add-ons');
-    return await res.json();
-  } catch (error) {
-    console.error('Error in fetchMasterAddons:', error);
-    return [];
-  }
-}
-
-/**
- * 3. Submit customer lead to Admin Dashboard
- */
-export async function submitQuotationOrder(orderData) {
-  try {
-    const res = await fetch(`${ADMIN_API_BASE}/submit-order`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData),
-    });
-    
-    return await res.json();
-  } catch (error) {
-    console.error('Error in submitQuotationOrder:', error);
-    return { success: false, error: error.message };
-  }
-}
-```
-
----
-
-## 🎨 4. React Page Component Integration Example
-
-Here is how to connect `SnackVendingPage.tsx` on the main website:
+Here is how to fetch machines and display **only that machine's add-ons**:
 
 ```tsx
 import React, { useState, useEffect } from 'react';
-import { fetchMachineVariants, fetchMasterAddons, submitQuotationOrder } from '../services/sohubAdminService';
 
 export default function SnackVendingPage() {
   const [machines, setMachines] = useState([]);
-  const [addons, setAddons] = useState([]);
   const [selectedMachine, setSelectedMachine] = useState(null);
-  const [selectedAddons, setSelectedAddons] = useState([]);
+  const [selectedAddonIds, setSelectedAddonIds] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Contact Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-    location: '',
-  });
-
-  // Load data on page load
+  // Load Machine Variants from Admin API
   useEffect(() => {
-    async function initData() {
-      const [machineData, addonData] = await Promise.all([
-        fetchMachineVariants(),
-        fetchMasterAddons()
-      ]);
-      setMachines(machineData);
-      setAddons(addonData);
-      if (machineData.length > 0) setSelectedMachine(machineData[0]);
-      setLoading(false);
+    async function loadMachines() {
+      try {
+        const res = await fetch('https://sohub-admin.vercel.app/api/machines');
+        const data = await res.json();
+        setMachines(data);
+        if (data.length > 0) setSelectedMachine(data[0]);
+      } catch (err) {
+        console.error('Error loading machines:', err);
+      } finally {
+        setLoading(false);
+      }
     }
-    initData();
+    loadMachines();
   }, []);
 
-  // Calculate live total price
+  // When selected machine changes, reset selected add-ons
+  const handleSelectMachine = (machine) => {
+    setSelectedMachine(machine);
+    setSelectedAddonIds([]);
+  };
+
+  // Toggle Add-on Selection
+  const toggleAddon = (addonId) => {
+    setSelectedAddonIds((prev) =>
+      prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId]
+    );
+  };
+
+  // Calculate Subtotal (Base Price + Selected Machine Addons)
   const calculateSubtotal = () => {
-    const base = selectedMachine ? selectedMachine.base_price : 0;
-    const addonsTotal = selectedAddons.reduce((acc, a) => acc + (a.price || 0), 0);
+    if (!selectedMachine) return 0;
+    const base = selectedMachine.base_price || 0;
+    const allowed = selectedMachine.allowed_addons || [];
+    const addonsTotal = allowed
+      .filter((a) => selectedAddonIds.includes(a.addon_id || a.id || a))
+      .reduce((acc, curr) => acc + (curr.price || 0), 0);
     return base + addonsTotal;
   };
 
-  // Submit Lead Handler
-  const handleSubmitLead = async (e) => {
-    e.preventDefault();
-    const subtotal = calculateSubtotal();
-
-    const result = await submitQuotationOrder({
-      customer_name: formData.name,
-      customer_email: formData.email,
-      customer_phone: formData.phone,
-      customer_company: formData.company,
-      delivery_location: formData.location,
-      chassis_title: selectedMachine?.title,
-      chassis_base_price: selectedMachine?.base_price,
-      selected_addons: selectedAddons.map(a => ({
-        addon_id: a.id,
-        addon_name: a.name,
-        final_price: a.price
-      })),
-      subtotal: subtotal
-    });
-
-    if (result.success) {
-      alert(`Thank you! Your quotation request #${result.order_number} has been submitted.`);
-    } else {
-      alert(`Submission failed: ${result.error}`);
-    }
-  };
-
-  if (loading) return <div>Loading SOHUB Configurator...</div>;
+  if (loading) return <div>Loading Machines...</div>;
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold">Configure Your SOHUB Vending Machine</h1>
+    <div className="container mx-auto p-6 text-white bg-slate-950">
+      <h1 className="text-3xl font-bold mb-6">Select Machine Model</h1>
 
-      {/* Machine Variant Selection */}
-      <div className="my-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 1. MACHINE SELECTION */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {machines.map((m) => (
           <div
             key={m.id}
-            onClick={() => setSelectedMachine(m)}
-            className={`p-4 border rounded-xl cursor-pointer ${
-              selectedMachine?.id === m.id ? 'border-amber-500 bg-amber-500/10' : 'border-gray-700'
+            onClick={() => handleSelectMachine(m)}
+            className={`p-6 rounded-2xl border cursor-pointer transition ${
+              selectedMachine?.id === m.id
+                ? 'border-amber-500 bg-amber-500/10'
+                : 'border-slate-800 bg-slate-900'
             }`}
           >
-            <h3 className="font-bold text-lg">{m.title}</h3>
-            <p className="text-sm text-gray-400">{m.short_description}</p>
-            <div className="mt-2 text-amber-400 font-bold">BDT {m.base_price?.toLocaleString()}</div>
+            <h3 className="font-bold text-xl mb-2">{m.title}</h3>
+            <p className="text-slate-400 text-sm mb-4">{m.short_description}</p>
+            <div className="text-2xl font-bold text-amber-400">
+              BDT {m.base_price?.toLocaleString()}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Submit Order Form */}
-      <form onSubmit={handleSubmitLead} className="space-y-4 max-w-md">
-        <input
-          type="text"
-          placeholder="Your Name"
-          required
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full p-3 bg-gray-800 rounded"
-        />
-        <input
-          type="email"
-          placeholder="Email Address"
-          required
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          className="w-full p-3 bg-gray-800 rounded"
-        />
-        <button type="submit" className="w-full py-3 bg-amber-500 text-black font-bold rounded">
-          Submit Quotation Request (BDT {calculateSubtotal().toLocaleString()})
-        </button>
-      </form>
+      {/* 2. ADD-ONS FOR SELECTED MACHINE ONLY */}
+      {selectedMachine && (
+        <div className="mb-8 p-6 bg-slate-900 rounded-2xl border border-slate-800">
+          <h2 className="text-xl font-bold mb-4">
+            Available Upgrades for {selectedMachine.title}
+          </h2>
+
+          {(!selectedMachine.allowed_addons || selectedMachine.allowed_addons.length === 0) ? (
+            <p className="text-slate-500">No extra add-ons required for this model.</p>
+          ) : (
+            <div className="space-y-3">
+              {selectedMachine.allowed_addons.map((addon) => {
+                const addonId = addon.addon_id || addon.id || addon;
+                const isSelected = selectedAddonIds.includes(addonId);
+                return (
+                  <div
+                    key={addonId}
+                    onClick={() => toggleAddon(addonId)}
+                    className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer ${
+                      isSelected
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : 'border-slate-800 bg-slate-950'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold">{addon.name || addonId}</div>
+                      <div className="text-xs text-slate-400">{addon.description}</div>
+                    </div>
+                    <div className="font-bold text-amber-400">
+                      + BDT {addon.price?.toLocaleString()}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. TOTAL ESTIMATE */}
+      <div className="p-6 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex justify-between items-center">
+        <div>
+          <div className="text-sm text-slate-400">Estimated Total</div>
+          <div className="text-3xl font-bold text-amber-400">
+            BDT {calculateSubtotal().toLocaleString()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -318,12 +231,8 @@ export default function SnackVendingPage() {
 
 ---
 
-## 🛠️ Checklist Summary
+## ✅ Summary
 
-| Task | Status | Note |
-|---|---|---|
-| Admin API Endpoints Deployment | ✅ **Live** | `https://sohub-admin.vercel.app/api/*` |
-| CORS Configuration | ✅ **Active** | Accepts requests from any domain |
-| Dynamic Machine Variants | ✅ **Ready** | Real-time fetch via `/api/machines` |
-| 10 Master Add-ons Sync | ✅ **Ready** | Real-time fetch via `/api/addons` |
-| Order Lead Generation | ✅ **Ready** | Instant submission via `/api/submit-order` |
+1. **Zero Hardcoded Addons:** The main site no longer queries a global 10 add-ons list.
+2. **Machine-Driven:** Each machine model returned from `GET /api/machines` brings its own specific add-ons list.
+3. **Seamless UX:** When a customer clicks a different machine model, the frontend instantly displays only the add-ons relevant to that model!
