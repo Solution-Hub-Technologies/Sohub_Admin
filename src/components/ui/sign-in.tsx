@@ -4,8 +4,8 @@ import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export const LightLogin: React.FC = () => {
   const { login, showToast } = useApp();
-  const [email, setEmail] = useState("admin@sohub.com.bd");
-  const [password, setPassword] = useState("sohub123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -72,7 +72,7 @@ export const LightLogin: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 h-12 pl-10 pr-4 rounded-xl focus:ring-2 focus:ring-[#ff751a]/30 focus:border-[#ff751a] w-full text-sm font-mono focus:outline-none transition-all"
-                  placeholder="admin@sohub.com.bd"
+                  placeholder="Enter your email"
                 />
               </div>
             </div>
@@ -126,13 +126,10 @@ export const LightLogin: React.FC = () => {
             </button>
           </form>
 
-          {/* Footer Security Note */}
+          {/* Footer Copyright */}
           <div className="mt-8 text-center border-t border-slate-100 pt-5">
-            <p className="text-xs text-slate-500 font-medium">
-              🔒 Protected by <span className="font-bold text-slate-700">Supabase Auth</span> & <span className="font-bold text-slate-700">SOHUB Shield</span>
-            </p>
-            <p className="text-[11px] text-slate-400 font-mono mt-1">
-              © 2026 Solution Hub Technologies
+            <p className="text-[11px] text-slate-400 font-mono">
+              © 2026 Solution Hub Technologies. All rights reserved.
             </p>
           </div>
         </div>
