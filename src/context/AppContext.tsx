@@ -281,11 +281,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .update(payload)
           .eq('id', chassisData.id);
         if (res?.error) {
-          console.error('Supabase update error:', res.error);
+          console.error('Supabase update error:', res.error.message, res.error.details, res.error.hint);
           showToast(`Supabase error: ${res.error.message}`, 'error');
         }
       } catch (e: any) {
-        console.error(e);
+        console.error('Chassis save error:', e);
         showToast(`Save Error: ${e.message || e}`, 'error');
       }
     } else {
@@ -297,13 +297,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         const res = await supabase.from('chassis').insert([payload]).select();
         if (res?.error) {
-          console.error('Supabase insert error:', res.error);
+          console.error('Supabase insert error details:', res.error.message, res.error.details, res.error.hint);
           showToast(`Supabase Error: ${res.error.message}`, 'error');
         } else if (res?.data && res.data[0]) {
           setChassisList((prev) => prev.map((c) => (c.id === tempId ? (res.data[0] as Chassis) : c)));
         }
       } catch (e: any) {
-        console.error(e);
+        console.error('Chassis insert exception:', e);
         showToast(`Save Error: ${e.message || e}`, 'error');
       }
     }
