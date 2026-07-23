@@ -27,7 +27,7 @@ interface AppContextType {
 
   // User Management
   usersList: AdminUser[];
-  addUser: (userData: Partial<AdminUser>) => Promise<boolean>;
+  addUser: (userData: Partial<AdminUser> & { password?: string }) => Promise<boolean>;
   toggleUserStatus: (userId: string) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   updateUserRole: (userId: string, role: UserRole) => Promise<void>;
@@ -85,24 +85,6 @@ const DEFAULT_USERS: AdminUser[] = [
     created_at: '2026-01-01T00:00:00Z',
     last_login: new Date().toISOString(),
   },
-  {
-    id: 'usr-2',
-    email: 'sales@sohub.com.bd',
-    full_name: 'Kazi Mahfuz',
-    role: 'Sales Manager',
-    status: 'Active',
-    created_at: '2026-02-10T10:30:00Z',
-    last_login: '2026-07-22T14:20:00Z',
-  },
-  {
-    id: 'usr-3',
-    email: 'ops@sohub.com.bd',
-    full_name: 'Rafiqul Islam',
-    role: 'Operations Admin',
-    status: 'Active',
-    created_at: '2026-03-05T09:15:00Z',
-    last_login: '2026-07-21T11:00:00Z',
-  },
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -113,7 +95,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem('sohub_auth_status');
-    return saved ? JSON.parse(saved) : true; // Default logged in for smooth preview
+    return saved ? JSON.parse(saved) : true;
   });
 
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
@@ -199,9 +181,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // --- AUTH HANDLERS ---
   const login = async (email: string, pass: string): Promise<boolean> => {
     try {
-      // Try Supabase Auth first
+      const cleanedEmail = email.trim().toLowerCase();
+
+      // 1. Try Supabase Custom `users` table first
+      const { data: dbUser, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', cleanedEmail)
+        .maybeSingle();
+
+      if (dbUser && !dbError) {
+        if (dbUser.status !== 'Active') {
+          showToast('Account is currently disabled. Contact Super Admin.', 'error');
+          return false;
+        }
+
+        if (dbUser.password === pass) {
+          const loggedUser: AdminUser = {
+            id: dbUser.id,
+            email: dbUser.email,
+            full_name: dbUser.full_name,
+            role: dbUser.role as UserRole,
+            status: dbUser.status as 'Active' | 'Inactive',
+            created_at: dbUser.created_at,
+            last_login: new Date().toISOString(),
+          };
+
+          setCurrentUser(loggedUser);
+          setIsAuthenticated(true);
+
+          // Update last login in Supabase
+          try {
+            await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', dbUser.id);
+          } catch (e) {
+            console.warn('Failed to update last_login timestamp:', e);
+          }
+
+          showToast(`Welcome back, ${loggedUser.full_name}! (${loggedUser.role})`, 'success');
+          return true;
+        } else {
+          showToast('Incorrect password entered.', 'error');
+          return false;
+        }
+      }
+
+      // 2. Try Supabase Auth native service
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: cleanedEmail,
         password: pass,
       });
 
@@ -211,8 +237,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsAuthenticated(true);
         const loggedUser: AdminUser = {
           id: data.user.id,
-          email: data.user.email || email,
-          full_name: data.user.user_metadata?.full_name || email.split('@')[0],
+          email: data.user.email || cleanedEmail,
+          full_name: data.user.user_metadata?.full_name || cleanedEmail.split('@')[0],
           role: 'Super Admin',
           status: 'Active',
           created_at: data.user.created_at,
@@ -223,26 +249,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return true;
       }
 
-      // Demo/Fallback Auth
-      if (email.trim().length > 0 && pass.trim().length > 0) {
-        const found = usersList.find((u) => u.email.toLowerCase() === email.toLowerCase());
-        const loggedUser: AdminUser = found || {
-          id: 'usr-' + Math.random().toString(36).substring(2, 7),
-          email: email,
-          full_name: email.split('@')[0],
-          role: 'Super Admin',
-          status: 'Active',
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString(),
-        };
-
-        setCurrentUser(loggedUser);
+      // 3. Fallback check local usersList state
+      const foundLocal = usersList.find((u) => u.email.toLowerCase() === cleanedEmail);
+      if (foundLocal) {
+        if (foundLocal.status !== 'Active') {
+          showToast('Account is inactive.', 'error');
+          return false;
+        }
+        setCurrentUser(foundLocal);
         setIsAuthenticated(true);
-        showToast(`Authenticated as ${loggedUser.full_name} (${loggedUser.role})`, 'success');
+        showToast(`Authenticated as ${foundLocal.full_name}`, 'success');
         return true;
       }
 
-      showToast('Please enter valid email and password credentials.', 'error');
+      // 4. Default demo credentials fallback (admin@sohub.com.bd / sohub123)
+      if (cleanedEmail === 'admin@sohub.com.bd' && pass === 'sohub123') {
+        const loggedUser: AdminUser = DEFAULT_USERS[0];
+        setCurrentUser(loggedUser);
+        setIsAuthenticated(true);
+        showToast('Authenticated as Super Admin (Demo)', 'success');
+        return true;
+      }
+
+      showToast('Invalid authentication credentials.', 'error');
       return false;
     } catch (err: any) {
       showToast(`Login error: ${err.message || err}`, 'error');
@@ -261,39 +290,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Signed out successfully', 'info');
   };
 
-  // --- USER MANAGEMENT HANDLERS ---
-  const addUser = async (userData: Partial<AdminUser>): Promise<boolean> => {
-    const newUser: AdminUser = {
-      id: 'usr-' + Math.random().toString(36).substring(2, 9),
-      email: userData.email || 'user@sohub.com.bd',
+  // --- USER MANAGEMENT HANDLERS (Synced with Supabase DB) ---
+  const addUser = async (userData: Partial<AdminUser> & { password?: string }): Promise<boolean> => {
+    const payload = {
       full_name: userData.full_name || 'Admin User',
+      email: (userData.email || 'user@sohub.com.bd').trim().toLowerCase(),
+      password: userData.password || 'sohub123',
       role: userData.role || 'Sales Manager',
+      status: 'Active',
+    };
+
+    // Save to Local State immediately
+    const localUser: AdminUser = {
+      id: 'usr-' + Math.random().toString(36).substring(2, 9),
+      full_name: payload.full_name,
+      email: payload.email,
+      role: payload.role as UserRole,
       status: 'Active',
       created_at: new Date().toISOString(),
     };
 
-    setUsersList((prev) => [newUser, ...prev]);
-    showToast(`Admin user "${newUser.full_name}" created successfully!`, 'success');
+    setUsersList((prev) => [localUser, ...prev]);
+
+    // Save to Supabase `users` table
+    try {
+      const res = await supabase.from('users').insert([payload]).select();
+      if (res?.error) {
+        console.error('Supabase user insert error:', res.error.message);
+        showToast(`Warning: Local user created, but Supabase error: ${res.error.message}`, 'info');
+      } else if (res?.data && res.data[0]) {
+        const dbUser = res.data[0];
+        setUsersList((prev) => [
+          {
+            id: dbUser.id,
+            full_name: dbUser.full_name,
+            email: dbUser.email,
+            role: dbUser.role,
+            status: dbUser.status,
+            created_at: dbUser.created_at,
+          },
+          ...prev.filter((u) => u.id !== localUser.id),
+        ]);
+        showToast(`User "${payload.full_name}" added to Supabase DB!`, 'success');
+      }
+    } catch (e: any) {
+      console.error('Supabase user save exception:', e);
+      showToast(`User created locally (${e.message || e})`, 'info');
+    }
+
     return true;
   };
 
   const toggleUserStatus = async (userId: string) => {
+    const target = usersList.find((u) => u.id === userId);
+    if (!target) return;
+    const newStatus = target.status === 'Active' ? 'Inactive' : 'Active';
+
     setUsersList((prev) =>
-      prev.map((u) =>
-        u.id === userId ? { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' } : u
-      )
+      prev.map((u) => (u.id === userId ? { ...u, status: newStatus } : u))
     );
-    showToast('User status updated');
+    showToast(`User status set to ${newStatus}`);
+
+    if (isUuid(userId)) {
+      try {
+        await supabase.from('users').update({ status: newStatus }).eq('id', userId);
+      } catch (e) {
+        console.error('Supabase user status toggle error:', e);
+      }
+    }
   };
 
   const deleteUser = async (userId: string) => {
     setUsersList((prev) => prev.filter((u) => u.id !== userId));
-    showToast('User removed permanently', 'info');
+    showToast('User deleted', 'info');
+
+    if (isUuid(userId)) {
+      try {
+        await supabase.from('users').delete().eq('id', userId);
+      } catch (e) {
+        console.error('Supabase user delete error:', e);
+      }
+    }
   };
 
   const updateUserRole = async (userId: string, role: UserRole) => {
     setUsersList((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
     showToast(`User role updated to ${role}`);
+
+    if (isUuid(userId)) {
+      try {
+        await supabase.from('users').update({ role }).eq('id', userId);
+      } catch (e) {
+        console.error('Supabase user role update error:', e);
+      }
+    }
   };
 
   // --- SUPABASE FETCH ---
@@ -304,6 +394,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setChassisList([]);
       setAddonsList([]);
       setOrders([]);
+      setUsersList(DEFAULT_USERS);
       setSelectedOrder(null);
       showToast('All data cleared permanently!', 'info');
     } catch (err) {
@@ -316,7 +407,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const fetchFromSupabase = async () => {
     setIsSyncing(true);
     try {
-      // Fetch Orders
+      // 1. Fetch Admin Users from Supabase DB
+      const { data: dbUsers } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (dbUsers && dbUsers.length > 0) {
+        setUsersList(
+          dbUsers.map((u) => ({
+            id: u.id,
+            email: u.email,
+            full_name: u.full_name,
+            role: u.role as UserRole,
+            status: u.status as 'Active' | 'Inactive',
+            created_at: u.created_at,
+            last_login: u.last_login,
+          }))
+        );
+      }
+
+      // 2. Fetch Orders
       const { data: dbOrders } = await supabase
         .from('orders')
         .select('*')
@@ -326,7 +437,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setOrders(dbOrders as Order[]);
       }
 
-      // Fetch Chassis
+      // 3. Fetch Chassis
       const { data: dbChassis } = await supabase
         .from('chassis')
         .select('*')
@@ -336,7 +447,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setChassisList(dbChassis as Chassis[]);
       }
 
-      // Fetch Addons
+      // 4. Fetch Addons
       const { data: dbAddons } = await supabase
         .from('addons')
         .select('*')
