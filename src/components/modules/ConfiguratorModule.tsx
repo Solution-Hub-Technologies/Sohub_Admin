@@ -22,11 +22,6 @@ import {
   Link as LinkIcon,
   X,
   AlertCircle,
-  Cpu,
-  ShieldCheck,
-  Monitor,
-  Package,
-  PlusCircle,
 } from 'lucide-react';
 
 export const ConfiguratorModule: React.FC = () => {
@@ -188,88 +183,55 @@ export const ConfiguratorModule: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 select-none">
-      {/* 1. Quick Overview KPI Stat Summary Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
-          <div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Active Chassis Models</p>
-            <p className="text-2xl font-black text-slate-900 mt-1">
-              {chassisList.filter((c) => c.is_active).length} Models Active
-            </p>
+      {/* Banner Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-subtle">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#ff751a]">
+            <Sliders className="w-4 h-4" /> Machine & Pricing Master Console
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-orange-50 text-[#ff751a] flex items-center justify-center font-bold border border-orange-100 shrink-0">
-            <Cpu className="w-6 h-6" />
-          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Configurator & Pricing Manager
+          </h1>
+          <p className="text-slate-500 text-xs">
+            Manage machine models, local image upload from PC, allowed add-ons, full specifications, and website visibility.
+          </p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
-          <div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Available Add-ons</p>
-            <p className="text-2xl font-black text-slate-900 mt-1">
-              {addonsList.filter((a) => a.is_active).length} Configured
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold border border-blue-100 shrink-0">
-            <Layers className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex items-center justify-between">
-          <div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Global Quotation Status</p>
-            <p className="text-2xl font-black text-emerald-600 mt-1">
-              Active & Linked
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold border border-emerald-100 shrink-0">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Sub-Navigation Tabs & Top Action */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-6 border-b sm:border-b-0 border-slate-200 pb-2 sm:pb-0">
+        {/* Action Switcher Tabs */}
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
           <button
             onClick={() => setActiveTab('machines')}
-            className={`pb-2 sm:pb-0 font-extrabold text-sm transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'machines'
-                ? 'border-[#ff751a] text-[#ff751a]'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Box className="w-4 h-4" /> Machines ({chassisList.length})
+            <Box className="w-3.5 h-3.5 text-[#ff751a]" /> Machines ({chassisList.length})
           </button>
 
           <button
             onClick={() => setActiveTab('addons')}
-            className={`pb-2 sm:pb-0 font-extrabold text-sm transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'addons'
-                ? 'border-[#ff751a] text-[#ff751a]'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Layers className="w-4 h-4" /> Add-ons ({addonsList.length})
+            <Layers className="w-3.5 h-3.5 text-[#ff751a]" /> Add-ons ({addonsList.length})
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`pb-2 sm:pb-0 font-extrabold text-sm transition-all flex items-center gap-2 border-b-2 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'settings'
-                ? 'border-[#ff751a] text-[#ff751a]'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Landmark className="w-4 h-4" /> Bank & Quotation Rules
+            <Landmark className="w-3.5 h-3.5 text-[#ff751a]" /> Bank & Rules
           </button>
         </div>
-
-        <button
-          onClick={() => handleOpenChassisModal()}
-          className="px-4 py-2.5 bg-[#ff751a] hover:bg-[#ea580c] active:translate-y-0 text-white text-xs font-extrabold rounded-xl shadow-brand hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" /> + Create Machine Variant
-        </button>
       </div>
 
       {/* ========================================================================= */}
@@ -277,140 +239,123 @@ export const ConfiguratorModule: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'machines' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {chassisList.map((chassis) => (
-              <div
-                key={chassis.id}
-                className={`bg-white rounded-2xl border transition-all p-5 space-y-4 shadow-xs hover:shadow-md flex flex-col justify-between ${
-                  chassis.is_active ? 'border-slate-200/80' : 'border-slate-200 opacity-60 bg-slate-50/50'
-                }`}
-              >
-                <div className="space-y-4">
-                  {/* Card Header: Image & Badges & Switch */}
-                  <div className="relative">
-                    <div className="w-full h-44 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden flex items-center justify-center relative">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+              Vending Machine Models & Base Pricing
+            </h2>
+            <button
+              onClick={() => handleOpenChassisModal()}
+              className="px-4 py-2 bg-[#ff751a] hover:bg-[#ea580c] text-white text-xs font-extrabold rounded-xl shadow-brand transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Create Machine Variant
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {chassisList.length === 0 ? (
+              <div className="col-span-full bg-white p-12 text-center rounded-2xl border border-slate-200">
+                <Box className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm font-bold text-slate-600">No machine models created yet.</p>
+                <p className="text-xs text-slate-400 mb-4">Click below to upload images and create your first machine variant.</p>
+                <button
+                  onClick={() => handleOpenChassisModal()}
+                  className="px-4 py-2 bg-[#ff751a] text-white text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Create Machine Variant
+                </button>
+              </div>
+            ) : (
+              chassisList.map((chassis) => (
+                <div
+                  key={chassis.id}
+                  className={`bg-white rounded-2xl border transition-all p-5 space-y-4 shadow-subtle ${
+                    chassis.is_active ? 'border-slate-200/80 hover:border-slate-300' : 'border-slate-200 opacity-60 bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
                       {chassis.image_url && chassis.image_url.trim() !== '' ? (
                         <img
                           src={chassis.image_url}
                           alt={chassis.title}
-                          className="w-full h-full object-cover rounded-xl"
+                          className="w-14 h-14 object-cover rounded-xl border border-slate-200 bg-slate-50 shrink-0"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
                           }}
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-2xl bg-orange-50 text-[#ff751a] flex items-center justify-center font-bold border border-orange-100">
-                          <Box className="w-8 h-8" />
+                        <div className="w-14 h-14 rounded-xl bg-orange-50 text-[#ff751a] flex items-center justify-center font-bold shrink-0 border border-orange-100">
+                          <Box className="w-6 h-6" />
                         </div>
                       )}
-
-                      {/* Build Type Pill Badge */}
-                      <span
-                        className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase shadow-2xs ${
-                          chassis.type === 'imported'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-emerald-600 text-white'
-                        }`}
-                      >
-                        {chassis.type === 'imported' ? 'Imported' : 'Local Build'}
-                      </span>
-
-                      {/* Status Toggle Switch */}
-                      <button
-                        onClick={() => toggleChassisStatus(chassis.id)}
-                        title="Active on Website Switch"
-                        className="absolute top-3 right-3 bg-white/90 backdrop-blur-xs p-1.5 rounded-xl border border-slate-200/80 shadow-2xs cursor-pointer hover:bg-white transition-all"
-                      >
-                        {chassis.is_active ? (
-                          <ToggleRight className="w-6 h-6 text-[#ff751a]" />
-                        ) : (
-                          <ToggleLeft className="w-6 h-6 text-slate-300" />
-                        )}
-                      </button>
+                      <div>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                            chassis.type === 'imported'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {chassis.type === 'imported' ? 'Imported' : 'Local Build'}
+                        </span>
+                        <h3 className="font-extrabold text-slate-900 text-sm mt-0.5">{chassis.title}</h3>
+                      </div>
                     </div>
+
+                    <button
+                      onClick={() => toggleChassisStatus(chassis.id)}
+                      title="Active on Website Switch"
+                      className="cursor-pointer"
+                    >
+                      {chassis.is_active ? (
+                        <ToggleRight className="w-6 h-6 text-[#ff751a]" />
+                      ) : (
+                        <ToggleLeft className="w-6 h-6 text-slate-300" />
+                      )}
+                    </button>
                   </div>
 
-                  {/* Title & Short Description */}
-                  <div>
-                    <h3 className="font-extrabold text-slate-900 text-lg tracking-tight leading-snug">
-                      {chassis.title}
-                    </h3>
-                    {chassis.short_description && (
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mt-1">
-                        {chassis.short_description}
-                      </p>
-                    )}
-                  </div>
+                  {chassis.short_description && (
+                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                      {chassis.short_description}
+                    </p>
+                  )}
 
-                  {/* Price Container */}
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex items-center justify-between">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center justify-between">
                     <span className="text-xs text-slate-500 font-bold">Base Price:</span>
-                    <span className="text-xl font-black text-slate-900">
+                    <span className="text-lg font-black text-slate-900">
                       ৳{chassis.base_price.toLocaleString('en-BD')}
                     </span>
                   </div>
 
-                  {/* Specs Badges Grid (Capacity & Display) */}
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-slate-100/70 p-2.5 rounded-xl border border-slate-200/50 flex items-center gap-2">
-                      <Package className="w-4 h-4 text-[#ff751a] shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block text-[10px] text-slate-400 font-bold uppercase">Capacity</span>
-                        <span className="font-extrabold text-slate-800 truncate block">
-                          {chassis.specifications?.capacity || '300 SKU'}
-                        </span>
-                      </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 font-medium">
+                    <div className="bg-slate-100/60 p-2 rounded-lg">
+                      <span className="block text-slate-400">Capacity</span>
+                      <span className="font-bold text-slate-800">{chassis.specifications?.capacity || '300 SKU'}</span>
                     </div>
-
-                    <div className="bg-slate-100/70 p-2.5 rounded-xl border border-slate-200/50 flex items-center gap-2">
-                      <Monitor className="w-4 h-4 text-blue-600 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block text-[10px] text-slate-400 font-bold uppercase">Display</span>
-                        <span className="font-extrabold text-slate-800 truncate block">
-                          {chassis.specifications?.display_type || '10-inch'}
-                        </span>
-                      </div>
+                    <div className="bg-slate-100/60 p-2 rounded-lg">
+                      <span className="block text-slate-400">Display</span>
+                      <span className="font-bold text-slate-800 truncate block">{chassis.specifications?.display_type || '10-inch'}</span>
                     </div>
                   </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                      onClick={() => handleOpenChassisModal(chassis)}
+                      className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-slate-500" /> Edit Model & Specs
+                    </button>
+                    <button
+                      onClick={() => deleteChassis(chassis.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-
-                {/* Card Footer Actions */}
-                <div className="pt-4 mt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => handleOpenChassisModal(chassis)}
-                    className="flex-1 py-2 px-3 text-xs font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 text-slate-600" /> Edit Model & Specs
-                  </button>
-
-                  <button
-                    onClick={() => deleteChassis(chassis.id)}
-                    className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
-                    title="Delete Chassis"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {/* Empty State Add Card (Dashed Border Card) */}
-            <div
-              onClick={() => handleOpenChassisModal()}
-              className="border-dashed border-2 border-slate-300 hover:border-[#ff751a] hover:bg-[#ff751a]/5 cursor-pointer rounded-2xl flex flex-col items-center justify-center p-8 transition-all space-y-3 min-h-[380px] group text-slate-500 hover:text-[#ff751a]"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 group-hover:bg-orange-100 text-slate-400 group-hover:text-[#ff751a] flex items-center justify-center font-bold transition-colors shadow-2xs">
-                <PlusCircle className="w-7 h-7" />
-              </div>
-              <div className="text-center space-y-1">
-                <p className="font-extrabold text-slate-900 group-hover:text-[#ff751a] text-sm">
-                  + Add New Machine Variant
-                </p>
-                <p className="text-xs text-slate-400 max-w-[200px]">
-                  Upload PC image, configure base price & dynamic specs
-                </p>
-              </div>
-            </div>
+              ))
+            )}
           </div>
         </div>
       )}
