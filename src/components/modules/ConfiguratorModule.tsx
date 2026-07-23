@@ -585,8 +585,8 @@ export const ConfiguratorModule: React.FC = () => {
       {/* RICH MODAL: CREATE / EDIT MACHINE VARIANT (With All 12+ Machine Specifications) */}
       {/* ========================================================================= */}
       {isChassisModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 space-y-5 shadow-2xl animate-scale-up border border-slate-200 my-8">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-start justify-center p-4 sm:p-8 pt-12 pb-12">
+          <div className="bg-white rounded-2xl max-w-5xl w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-scale-up border border-slate-200 my-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <Box className="w-5 h-5 text-[#ff751a]" />
