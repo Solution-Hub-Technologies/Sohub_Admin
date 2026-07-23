@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Chassis, Addon, Order, GlobalSettings, OrderStatus } from '../lib/types';
-import { INITIAL_SETTINGS, INITIAL_ADDONS, INITIAL_CHASSIS } from '../lib/mockData';
+import { INITIAL_SETTINGS } from '../lib/mockData';
 import { supabase, clearAllSupabaseTables } from '../lib/supabase';
 
 export type NavTab = 'orders' | 'configurator';
@@ -61,7 +61,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Helper to validate UUID format for PostgreSQL UUID columns
 const isUuid = (str?: string) =>
   !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
@@ -70,9 +69,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Initial state from mock data
-  const [chassisList, setChassisList] = useState<Chassis[]>(INITIAL_CHASSIS);
-  const [addonsList, setAddonsList] = useState<Addon[]>(INITIAL_ADDONS);
+  // Strict Database-only Initial States (Empty arrays)
+  const [chassisList, setChassisList] = useState<Chassis[]>([]);
+  const [addonsList, setAddonsList] = useState<Addon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
   const [settings, setSettings] = useState<GlobalSettings>(() => {
@@ -99,7 +98,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Initial load from Supabase
+  // Initial load strictly from Supabase Database
   useEffect(() => {
     fetchFromSupabase();
   }, []);
@@ -133,35 +132,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setOrders(dbOrders as Order[]);
       }
 
-      // Fetch Chassis
+      // Fetch Chassis strictly from DB
       const { data: dbChassis } = await supabase
         .from('chassis')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (dbChassis && dbChassis.length > 0) {
+      if (dbChassis) {
         setChassisList(dbChassis as Chassis[]);
       }
 
-      // Fetch Addons
+      // Fetch Addons strictly from DB
       const { data: dbAddons } = await supabase
         .from('addons')
         .select('*')
         .order('sort_order', { ascending: true });
 
-      if (dbAddons && dbAddons.length > 0) {
+      if (dbAddons) {
         setAddonsList(dbAddons as Addon[]);
-      } else {
-        setAddonsList(INITIAL_ADDONS);
-        try {
-          await supabase.from('addons').insert(
-            INITIAL_ADDONS.map(({ id, ...rest }) => ({
-              ...rest,
-            }))
-          );
-        } catch (e) {
-          console.warn('Initial addons seeding note:', e);
-        }
       }
 
       setIsSupabaseLive(true);
