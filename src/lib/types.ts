@@ -84,3 +84,15 @@ export interface GlobalSettings {
   bank_details: BankDetails;
   terms_and_conditions: string[];
 }
+
+export type UserRole = 'Super Admin' | 'Sales Manager' | 'Operations Admin' | 'Viewer';
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  status: 'Active' | 'Inactive';
+  created_at: string;
+  last_login?: string;
+}

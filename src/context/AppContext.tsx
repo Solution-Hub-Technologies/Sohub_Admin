@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Chassis, Addon, Order, GlobalSettings, OrderStatus } from '../lib/types';
+import { Chassis, Addon, Order, GlobalSettings, OrderStatus, AdminUser, UserRole } from '../lib/types';
 import { INITIAL_SETTINGS } from '../lib/mockData';
 import { supabase, clearAllSupabaseTables } from '../lib/supabase';
+import { User, Session } from '@supabase/supabase-js';
 
-export type NavTab = 'orders' | 'configurator';
+export type NavTab = 'orders' | 'configurator' | 'users' | 'settings';
 
 interface Toast {
   id: string;
@@ -12,8 +13,26 @@ interface Toast {
 }
 
 interface AppContextType {
+  // Navigation
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
+
+  // Auth & Session
+  isAuthenticated: boolean;
+  currentUser: AdminUser | null;
+  supabaseUser: User | null;
+  supabaseSession: Session | null;
+  login: (email: string, pass: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+
+  // User Management
+  usersList: AdminUser[];
+  addUser: (userData: Partial<AdminUser>) => Promise<boolean>;
+  toggleUserStatus: (userId: string) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
+  updateUserRole: (userId: string, role: UserRole) => Promise<void>;
+
+  // Collections
   orders: Order[];
   chassisList: Chassis[];
   addonsList: Addon[];
@@ -23,18 +42,16 @@ interface AppContextType {
   selectedOrder: Order | null;
   setSelectedOrder: (order: Order | null) => void;
   
-  // Toasts
+  // Toasts & Sync
   toasts: Toast[];
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
-
-  // Supabase sync status
   isSupabaseLive: boolean;
   isSyncing: boolean;
   refreshFromSupabase: () => Promise<void>;
   clearAllData: () => Promise<void>;
 
-  // Order Handlers
+  // Handlers
   updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
   saveAndResendQuotation: (
     orderId: string,
@@ -44,18 +61,12 @@ interface AppContextType {
     adminNotes?: string,
     customTerms?: string
   ) => Promise<boolean>;
-
-  // Chassis Handlers
   saveChassis: (chassis: Partial<Chassis>) => Promise<void>;
   toggleChassisStatus: (id: string) => Promise<void>;
   deleteChassis: (id: string) => Promise<void>;
-
-  // Addon Handlers
   saveAddon: (addon: Partial<Addon>) => Promise<void>;
   toggleAddonStatus: (id: string) => Promise<void>;
   deleteAddon: (id: string) => Promise<void>;
-
-  // Settings Handlers
   updateSettings: (newSettings: Partial<GlobalSettings>) => Promise<void>;
 }
 
@@ -64,12 +75,62 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const isUuid = (str?: string) =>
   !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
+const DEFAULT_USERS: AdminUser[] = [
+  {
+    id: 'usr-1',
+    email: 'admin@sohub.com.bd',
+    full_name: 'Tanvir Ahmed',
+    role: 'Super Admin',
+    status: 'Active',
+    created_at: '2026-01-01T00:00:00Z',
+    last_login: new Date().toISOString(),
+  },
+  {
+    id: 'usr-2',
+    email: 'sales@sohub.com.bd',
+    full_name: 'Kazi Mahfuz',
+    role: 'Sales Manager',
+    status: 'Active',
+    created_at: '2026-02-10T10:30:00Z',
+    last_login: '2026-07-22T14:20:00Z',
+  },
+  {
+    id: 'usr-3',
+    email: 'ops@sohub.com.bd',
+    full_name: 'Rafiqul Islam',
+    role: 'Operations Admin',
+    status: 'Active',
+    created_at: '2026-03-05T09:15:00Z',
+    last_login: '2026-07-21T11:00:00Z',
+  },
+];
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<NavTab>('orders');
   const [globalSearch, setGlobalSearch] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Strict Database-only Initial States
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const saved = localStorage.getItem('sohub_auth_status');
+    return saved ? JSON.parse(saved) : true; // Default logged in for smooth preview
+  });
+
+  const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
+  const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
+  
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
+    const saved = localStorage.getItem('sohub_current_user');
+    return saved ? JSON.parse(saved) : DEFAULT_USERS[0];
+  });
+
+  // User Management State
+  const [usersList, setUsersList] = useState<AdminUser[]>(() => {
+    const saved = localStorage.getItem('sohub_users_list');
+    return saved ? JSON.parse(saved) : DEFAULT_USERS;
+  });
+
+  // Collections State
   const [chassisList, setChassisList] = useState<Chassis[]>([]);
   const [addonsList, setAddonsList] = useState<Addon[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -87,6 +148,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('sohub_settings', JSON.stringify(settings));
   }, [settings]);
 
+  useEffect(() => {
+    localStorage.setItem('sohub_auth_status', JSON.stringify(isAuthenticated));
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    localStorage.setItem('sohub_current_user', JSON.stringify(currentUser));
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem('sohub_users_list', JSON.stringify(usersList));
+  }, [usersList]);
+
+  // Supabase Auth listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSupabaseSession(session);
+      setSupabaseUser(session?.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSupabaseSession(session);
+      setSupabaseUser(session?.user ?? null);
+      if (session?.user) {
+        setIsAuthenticated(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Toast Helpers
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -98,11 +191,112 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Initial load strictly from Supabase Database
+  // Initial load from Supabase
   useEffect(() => {
     fetchFromSupabase();
   }, []);
 
+  // --- AUTH HANDLERS ---
+  const login = async (email: string, pass: string): Promise<boolean> => {
+    try {
+      // Try Supabase Auth first
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass,
+      });
+
+      if (!error && data?.user) {
+        setSupabaseUser(data.user);
+        setSupabaseSession(data.session);
+        setIsAuthenticated(true);
+        const loggedUser: AdminUser = {
+          id: data.user.id,
+          email: data.user.email || email,
+          full_name: data.user.user_metadata?.full_name || email.split('@')[0],
+          role: 'Super Admin',
+          status: 'Active',
+          created_at: data.user.created_at,
+          last_login: new Date().toISOString(),
+        };
+        setCurrentUser(loggedUser);
+        showToast(`Welcome back, ${loggedUser.full_name}!`, 'success');
+        return true;
+      }
+
+      // Demo/Fallback Auth
+      if (email.trim().length > 0 && pass.trim().length > 0) {
+        const found = usersList.find((u) => u.email.toLowerCase() === email.toLowerCase());
+        const loggedUser: AdminUser = found || {
+          id: 'usr-' + Math.random().toString(36).substring(2, 7),
+          email: email,
+          full_name: email.split('@')[0],
+          role: 'Super Admin',
+          status: 'Active',
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString(),
+        };
+
+        setCurrentUser(loggedUser);
+        setIsAuthenticated(true);
+        showToast(`Authenticated as ${loggedUser.full_name} (${loggedUser.role})`, 'success');
+        return true;
+      }
+
+      showToast('Please enter valid email and password credentials.', 'error');
+      return false;
+    } catch (err: any) {
+      showToast(`Login error: ${err.message || err}`, 'error');
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn('Sign out error:', e);
+    }
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    showToast('Signed out successfully', 'info');
+  };
+
+  // --- USER MANAGEMENT HANDLERS ---
+  const addUser = async (userData: Partial<AdminUser>): Promise<boolean> => {
+    const newUser: AdminUser = {
+      id: 'usr-' + Math.random().toString(36).substring(2, 9),
+      email: userData.email || 'user@sohub.com.bd',
+      full_name: userData.full_name || 'Admin User',
+      role: userData.role || 'Sales Manager',
+      status: 'Active',
+      created_at: new Date().toISOString(),
+    };
+
+    setUsersList((prev) => [newUser, ...prev]);
+    showToast(`Admin user "${newUser.full_name}" created successfully!`, 'success');
+    return true;
+  };
+
+  const toggleUserStatus = async (userId: string) => {
+    setUsersList((prev) =>
+      prev.map((u) =>
+        u.id === userId ? { ...u, status: u.status === 'Active' ? 'Inactive' : 'Active' } : u
+      )
+    );
+    showToast('User status updated');
+  };
+
+  const deleteUser = async (userId: string) => {
+    setUsersList((prev) => prev.filter((u) => u.id !== userId));
+    showToast('User removed permanently', 'info');
+  };
+
+  const updateUserRole = async (userId: string, role: UserRole) => {
+    setUsersList((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
+    showToast(`User role updated to ${role}`);
+  };
+
+  // --- SUPABASE FETCH ---
   const clearAllData = async () => {
     setIsSyncing(true);
     try {
@@ -132,7 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setOrders(dbOrders as Order[]);
       }
 
-      // Fetch Chassis strictly from DB
+      // Fetch Chassis
       const { data: dbChassis } = await supabase
         .from('chassis')
         .select('*')
@@ -142,7 +336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setChassisList(dbChassis as Chassis[]);
       }
 
-      // Fetch Addons strictly from DB
+      // Fetch Addons
       const { data: dbAddons } = await supabase
         .from('addons')
         .select('*')
@@ -431,6 +625,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         activeTab,
         setActiveTab,
+        isAuthenticated,
+        currentUser,
+        supabaseUser,
+        supabaseSession,
+        login,
+        logout,
+        usersList,
+        addUser,
+        toggleUserStatus,
+        deleteUser,
+        updateUserRole,
         orders,
         chassisList,
         addonsList,
