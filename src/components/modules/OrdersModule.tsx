@@ -505,26 +505,14 @@ export const OrdersModule: React.FC = () => {
                   <Calculator className="w-4 h-4" /> VAT & Live Grand Total Breakdown
                 </h3>
 
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <label className="block text-slate-400 font-semibold mb-1">VAT Rate (%)</label>
-                    <input
-                      type="number"
-                      value={drawerVatRate}
-                      onChange={(e) => setDrawerVatRate(parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-400 font-semibold mb-1">Monthly IoT Fee (BDT)</label>
-                    <input
-                      type="number"
-                      value={drawerMonthlyFee}
-                      onChange={(e) => setDrawerMonthlyFee(parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a]"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1 text-xs">VAT Rate (%)</label>
+                  <input
+                    type="number"
+                    value={drawerVatRate}
+                    onChange={(e) => setDrawerVatRate(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a]"
+                  />
                 </div>
 
                 <div className="pt-3 border-t border-slate-800 space-y-1.5 text-xs">

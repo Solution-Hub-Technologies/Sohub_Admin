@@ -172,10 +172,6 @@ viii. The monthly recurring service fee shall become effective from the date of 
               <td class="label">VAT (${vat_rate || 5}%)</td>
               <td class="value">৳${Number(vat_amount || 0).toLocaleString('en-BD')}</td>
             </tr>
-            <tr>
-              <td class="label">Monthly IoT Platform</td>
-              <td class="value">৳${Number(monthly_recurring_fee || 5000).toLocaleString('en-BD')}/mo</td>
-            </tr>
             <tr class="grand-total">
               <td class="label" style="font-weight:700; color:#ff5454;">Grand Total</td>
               <td class="value">৳${Number(grand_total || 0).toLocaleString('en-BD')}</td>
