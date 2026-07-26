@@ -41,91 +41,164 @@ export default async function handler(req, res) {
   const lambdaSecret = process.env.LAMBDA_SECRET;
   const adminEmail = process.env.ADMIN_EMAIL || 'hello@sohub.com.bd';
 
+  const defaultNotesText = `*** Note:
+i. All prices are exclusive of all applicable government taxes and charges.
+ii. Delivery Time: 45–60 working days after issuance of the purchase order.
+iii. Quotation Validity: This offer is valid for 30 days from the date of submission.
+iv. Technical support related to the machine will be provided remotely by SOHUB through online or telephone assistance.
+v. Electrical setup and electrician support must be arranged by the customer.
+vi. Installation, commissioning, and user training are included. A 1-year service warranty is provided; however, spare parts and consumable items are not covered under the warranty.
+vii. Any on-site support visit requested by the Customer after installation will be chargeable based on the location, travel, and time required.
+viii. The monthly recurring service fee shall become effective from the date of successful installation and acceptance of the system by the Customer.`;
+
+  const finalNotes = admin_notes || defaultNotesText;
+
+  // Format notes lines for rendering
+  const formattedNotesLines = finalNotes
+    .split('\n')
+    .filter((line) => line.trim().length > 0)
+    .map((line) => `<li style="margin-bottom: 6px; color: #334155;">${line}</li>`)
+    .join('');
+
+  // Premium PDF-Matched HTML Quotation Email Template
   const htmlContent = `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
-      <meta charset="utf-8">
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Quotation #${order_number}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,500;0,600;0,700&display=swap" rel="stylesheet">
       <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
-        .card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .header { background: #0f172a; padding: 28px 32px; color: #ffffff; text-align: left; }
-        .header h1 { margin: 0; font-size: 20px; font-weight: 800; color: #ff751a; text-transform: uppercase; letter-spacing: 1px; }
-        .header p { margin: 4px 0 0 0; font-size: 13px; color: #94a3b8; }
-        .content { padding: 32px; }
-        .customer-box { background: #f1f5f9; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; }
-        .customer-box table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .customer-box td { padding: 4px 0; }
-        .table-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
-        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-        .items-table th { background: #f8fafc; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        .items-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-        .total-box { background: #0f172a; color: #ffffff; padding: 20px; border-radius: 12px; margin-top: 24px; }
-        .total-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #cbd5e1; }
-        .grand-total { display: flex; justify-style: space-between; font-size: 18px; font-weight: 800; color: #ff751a; padding-top: 10px; border-top: 1px solid #334155; margin-top: 10px; }
-        .notes-box { background: #fff7ed; border-left: 4px solid #ff751a; padding: 12px 16px; margin-top: 20px; border-radius: 4px; font-size: 13px; color: #9a3412; }
-        .footer { background: #f8fafc; padding: 20px 32px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; }
+        body { font-family: 'Inter', sans-serif; background-color: #e2e8f0; margin: 0; padding: 20px; color: #1e293b; }
+        .page { max-width: 680px; margin: 0 auto; background: #f6f5f2; border-radius: 16px; padding: 36px 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #cbd5e1; }
+        .logo-header { font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 300; margin: 0 0 20px 0; color: #0f172a; }
+        .logo-header strong { font-weight: 800; font-size: 18px; color: #ff5454; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+        .quote-title { font-family: 'Lora', serif; font-size: 24px; font-weight: 600; color: #ff5454; margin-bottom: 24px; border-bottom: 2px solid #ff5454; padding-bottom: 8px; }
+        .info-grid { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 24px; background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .info-grid p { margin: 3px 0; color: #475569; }
+        .info-grid strong { color: #0f172a; }
+        .section-header { font-family: 'Lora', serif; font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+        .items-table th { font-family: 'Lora', serif; font-size: 14px; font-weight: 600; text-align: left; padding: 10px 12px; border-bottom: 2px solid #0f172a; color: #0f172a; }
+        .items-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 500; color: #334155; }
+        .items-table .right { text-align: right; }
+        .items-table .center { text-align: center; }
+        .tbd-badge { display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 800; background-color: #fef3c7; color: #92400e; border-radius: 4px; border: 1px solid #fde68a; }
+        .totals-container { margin-top: 24px; display: flex; justify-content: flex-end; }
+        .totals-table { width: 280px; border-collapse: collapse; font-size: 12px; }
+        .totals-table td { padding: 6px 10px; }
+        .totals-table td.label { font-family: 'Lora', serif; font-size: 14px; color: #475569; }
+        .totals-table td.value { text-align: right; font-weight: 700; color: #0f172a; }
+        .totals-table tr.grand-total td { font-size: 16px; font-weight: 800; color: #ff5454; border-top: 2px solid #0f172a; padding-top: 10px; }
+        .notes-block { background: #ffffff; padding: 18px 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 32px; font-size: 11px; }
+        .notes-block h4 { font-family: 'Lora', serif; font-size: 14px; font-weight: 600; margin: 0 0 10px 0; color: #0f172a; }
+        .terms-list { padding-left: 18px; margin: 0; list-style-type: decimal; }
+        .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 20px; }
+        .footer span { color: #ff5454; font-weight: 700; }
+        .powered-by { text-align: right; margin-top: 12px; font-family: 'Lora', serif; font-size: 11px; font-weight: 600; color: #475569; }
+        .powered-by strong { color: #d97706; }
       </style>
     </head>
     <body>
-      <div class="card">
-        <div class="header">
-          <h1>SOHUB Vending Quotation</h1>
-          <p>Order Ref: <strong>${order_number}</strong> | Date: ${new Date().toLocaleDateString('en-GB')}</p>
+      <div class="page">
+        <!-- Logo Header -->
+        <div class="logo-header">
+          machine
+          <strong>by sohub</strong>
         </div>
-        <div class="content">
-          <p>Dear <strong>${customer_name}</strong>,</p>
-          <p>Thank you for contacting SOHUB. Here is your customized quotation breakdown for <strong>${chassis_title}</strong>.</p>
-          
-          <div class="customer-box">
-            <table>
-              <tr><td><strong>Client:</strong> ${customer_name} (${customer_company || 'Individual Lead'})</td></tr>
-              <tr><td><strong>Phone:</strong> ${customer_phone} | <strong>Email:</strong> ${customer_email}</td></tr>
-              <tr><td><strong>Delivery Location:</strong> ${delivery_location}</td></tr>
-            </table>
-          </div>
 
-          <div class="table-title">Selected Machine Configuration & Add-ons</div>
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Item Description</th>
-                <th style="text-align: right;">Price (BDT)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>${chassis_title} (Base Machine)</strong></td>
-                <td style="text-align: right;">৳${Number(chassis_base_price || 0).toLocaleString('en-BD')}</td>
-              </tr>
-              ${(selected_addons || []).map(addon => `
+        <!-- Quotation Title -->
+        <div class="quote-title">Quotation No: ${order_number}</div>
+
+        <!-- Customer & Date info grid -->
+        <div class="info-grid">
+          <div>
+            <div class="section-header">Customer Details</div>
+            <p>Name: <strong>${customer_name}</strong></p>
+            <p>Company: <strong>${customer_company || 'Individual Lead'}</strong></p>
+            <p>Email: <strong>${customer_email}</strong> | Phone: <strong>${customer_phone}</strong></p>
+            <p>Delivery Location: <strong>${delivery_location}</strong></p>
+          </div>
+          <div style="text-align: right;">
+            <div class="section-header">Date</div>
+            <p><strong>${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</strong></p>
+          </div>
+        </div>
+
+        ${customer_notes ? `
+          <div style="background: #fff7ed; padding: 12px 16px; border-left: 4px solid #f97316; border-radius: 6px; margin-bottom: 20px; font-size: 12px; color: #9a3412;">
+            <strong>Customer Request Note:</strong> "${customer_notes}"
+          </div>
+        ` : ''}
+
+        <!-- Items Table -->
+        <div class="section-header">Particulars & Pricing Breakdown</div>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th width="55%">Particulars</th>
+              <th class="center" width="15%">Qty</th>
+              <th class="right" width="30%">Price (BDT)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>${chassis_title} (Base Machine Chassis)</strong></td>
+              <td class="center">1</td>
+              <td class="right">৳${Number(chassis_base_price || 0).toLocaleString('en-BD')}</td>
+            </tr>
+            ${(selected_addons || []).map(addon => {
+              const isTbd = addon.is_tbd || Number(addon.final_price) === 0;
+              return `
                 <tr>
-                  <td>${addon.addon_name}</td>
-                  <td style="text-align: right;">৳${Number(addon.final_price || 0).toLocaleString('en-BD')}</td>
+                  <td>+ ${addon.addon_name} ${isTbd ? '<span class="tbd-badge">TBD</span>' : ''}</td>
+                  <td class="center">1</td>
+                  <td class="right">${isTbd ? '<span class="tbd-badge">To Be Discussed</span>' : '৳' + Number(addon.final_price).toLocaleString('en-BD')}</td>
                 </tr>
-              `).join('')}
-            </tbody>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <!-- Totals Container -->
+        <div class="totals-container">
+          <table class="totals-table">
+            <tr>
+              <td class="label">Subtotal</td>
+              <td class="value">৳${Number(subtotal || 0).toLocaleString('en-BD')}</td>
+            </tr>
+            <tr>
+              <td class="label">VAT (${vat_rate || 5}%)</td>
+              <td class="value">৳${Number(vat_amount || 0).toLocaleString('en-BD')}</td>
+            </tr>
+            <tr>
+              <td class="label">Monthly IoT Platform</td>
+              <td class="value">৳${Number(monthly_recurring_fee || 5000).toLocaleString('en-BD')}/mo</td>
+            </tr>
+            <tr class="grand-total">
+              <td class="label" style="font-weight:700; color:#ff5454;">Grand Total</td>
+              <td class="value">৳${Number(grand_total || 0).toLocaleString('en-BD')}</td>
+            </tr>
           </table>
-
-          <div class="total-box">
-            <div class="total-row"><span>Subtotal:</span><span>৳${Number(subtotal || 0).toLocaleString('en-BD')}</span></div>
-            <div class="total-row"><span>VAT (${vat_rate || 5}%):</span><span>৳${Number(vat_amount || 0).toLocaleString('en-BD')}</span></div>
-            <div class="total-row"><span>Monthly IoT & Cloud Service Fee:</span><span>৳${Number(monthly_recurring_fee || 5000).toLocaleString('en-BD')}/mo</span></div>
-            <div class="grand-total"><span>Grand Total:</span><span>৳${Number(grand_total || 0).toLocaleString('en-BD')}</span></div>
-          </div>
-
-          ${admin_notes || customer_notes ? `
-            <div class="notes-box">
-              <strong>Special Instructions / Notes:</strong><br/>
-              ${admin_notes || customer_notes}
-            </div>
-          ` : ''}
-
-          <p style="margin-top: 24px; font-size: 13px;">If you have any questions or would like to confirm your order, please reply to this email or contact us.</p>
         </div>
+
+        <!-- Notes / Terms & Conditions -->
+        <div class="notes-block">
+          <h4>Terms, Conditions & Important Notes</h4>
+          <ol class="terms-list">
+            ${formattedNotesLines}
+          </ol>
+        </div>
+
+        <!-- Footer -->
         <div class="footer">
-          &copy; ${new Date().getFullYear()} Solution Hub Technologies (SOHUB). All rights reserved.<br/>
-          Dhaka, Bangladesh | Web: machines.sohub.com.bd
+          <p>For Support, Email: <span>${adminEmail}</span> | Phone: <span>+880 1922-036882</span></p>
+          <p>Machine by SOHUB — Building reliable machine infrastructure for Bangladesh</p>
+        </div>
+
+        <div class="powered-by">
+          Powered BY <strong>{...} sohub</strong>
         </div>
       </div>
     </body>
@@ -141,7 +214,7 @@ export default async function handler(req, res) {
           name: customer_name,
           email: adminEmail,
           to: customer_email,
-          subject: `Quotation Breakdown #${order_number} - SOHUB Vending`,
+          subject: `Official Quotation #${order_number} - Machine by SOHUB`,
           source: 'SOHUB Admin Portal',
           secretKey: lambdaSecret,
           htmlTemplate: htmlContent,

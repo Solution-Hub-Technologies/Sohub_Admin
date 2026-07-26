@@ -25,6 +25,16 @@ import {
   Trash2,
 } from 'lucide-react';
 
+const DEFAULT_QUOTATION_NOTES = `*** Note:
+i. All prices are exclusive of all applicable government taxes and charges.
+ii. Delivery Time: 45–60 working days after issuance of the purchase order.
+iii. Quotation Validity: This offer is valid for 30 days from the date of submission.
+iv. Technical support related to the machine will be provided remotely by SOHUB through online or telephone assistance.
+v. Electrical setup and electrician support must be arranged by the customer.
+vi. Installation, commissioning, and user training are included. A 1-year service warranty is provided; however, spare parts and consumable items are not covered under the warranty.
+vii. Any on-site support visit requested by the Customer after installation will be chargeable based on the location, travel, and time required.
+viii. The monthly recurring service fee shall become effective from the date of successful installation and acceptance of the system by the Customer.`;
+
 export const OrdersModule: React.FC = () => {
   const {
     orders,
@@ -62,7 +72,7 @@ export const OrdersModule: React.FC = () => {
       setDrawerAddons(JSON.parse(JSON.stringify(selectedOrder.selected_addons || [])));
       setDrawerVatRate(selectedOrder.vat_rate || 5);
       setDrawerMonthlyFee(selectedOrder.monthly_recurring_fee || 5000);
-      setDrawerNotes(selectedOrder.admin_notes || selectedOrder.customer_notes || '');
+      setDrawerNotes(selectedOrder.admin_notes || DEFAULT_QUOTATION_NOTES);
     }
   }, [selectedOrder]);
 
@@ -436,44 +446,56 @@ export const OrdersModule: React.FC = () => {
 
                 {/* Addons List with editable prices */}
                 <div className="space-y-2">
-                  {drawerAddons.map((addonItem, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-4 shadow-2xs"
-                    >
-                      <div className="flex-1">
-                        <span className="font-bold text-slate-900 text-xs">{addonItem.addon_name}</span>
-                        {addonItem.is_tbd && (
-                          <span className="ml-2 px-1.5 py-0.5 text-[10px] font-extrabold bg-amber-100 text-amber-800 rounded">
-                            TBD
-                          </span>
-                        )}
-                      </div>
+                  {drawerAddons.map((addonItem, idx) => {
+                    const isTbd = addonItem.is_tbd || Number(addonItem.final_price) === 0;
+                    return (
+                      <div
+                        key={idx}
+                        className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-4 shadow-2xs"
+                      >
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-xs">{addonItem.addon_name}</span>
+                          {isTbd && (
+                            <span className="px-2 py-0.5 text-[10px] font-black bg-amber-100 text-amber-900 rounded-md border border-amber-300">
+                              TBD
+                            </span>
+                          )}
+                        </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-500">৳</span>
-                        <input
-                          type="number"
-                          value={addonItem.final_price}
-                          onChange={(e) => handleAddonPriceChange(idx, parseFloat(e.target.value) || 0)}
-                          className="w-28 px-2.5 py-1.5 text-xs font-bold text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#ff751a] focus:outline-none text-right"
-                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-500">৳</span>
+                          <input
+                            type="number"
+                            value={addonItem.final_price}
+                            onChange={(e) => handleAddonPriceChange(idx, parseFloat(e.target.value) || 0)}
+                            placeholder="0 (TBD)"
+                            className="w-28 px-2.5 py-1.5 text-xs font-bold text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#ff751a] focus:outline-none text-right"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Admin Notes / Special Terms Textarea */}
               <div className="space-y-1.5 text-xs">
-                <label className="block text-slate-700 font-bold flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-[#ff751a]" /> Admin Notes & Special Offer Terms (Included in Customer Email & PDF):
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-700 font-bold flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[#ff751a]" /> Terms & Conditions Notes (Auto-filled & Editable):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setDrawerNotes(DEFAULT_QUOTATION_NOTES)}
+                    className="text-[11px] font-bold text-[#ff751a] hover:underline cursor-pointer"
+                  >
+                    Reset Default Terms
+                  </button>
+                </div>
                 <textarea
                   value={drawerNotes}
                   onChange={(e) => setDrawerNotes(e.target.value)}
-                  placeholder="Add any customized discount details, special warranty terms, or delivery notes..."
-                  className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a] h-20"
+                  className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a] h-36 font-mono leading-relaxed"
                 />
               </div>
 
