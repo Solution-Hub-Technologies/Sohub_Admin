@@ -1,4 +1,6 @@
 import PDFDocument from 'pdfkit';
+import fs from 'fs';
+import path from 'path';
 
 const mmToPt = (mm) => (mm * 72) / 25.4;
 
@@ -7,7 +9,7 @@ const getPDFBuffer = (data) => {
     try {
       const doc = new PDFDocument({
         size: 'A4',
-        margins: { top: mmToPt(10), bottom: mmToPt(10), left: mmToPt(12), right: mmToPt(12) },
+        margins: { top: mmToPt(8), bottom: mmToPt(8), left: mmToPt(10), right: mmToPt(10) },
         autoFirstPage: false,
         bufferPages: true,
       });
@@ -19,130 +21,145 @@ const getPDFBuffer = (data) => {
 
       doc.addPage();
 
-      // Background
+      // Page background
       doc.rect(0, 0, mmToPt(210), mmToPt(297)).fill('#f6f5f2');
 
-      // Title & Brand Header
-      doc.font('Helvetica-Bold').fontSize(22).fillColor('#0f172a')
-         .text('machine', mmToPt(12), mmToPt(14), { lineBreak: false });
-      doc.font('Helvetica-Bold').fontSize(14).fillColor('#ff5454')
-         .text('BY SOHUB', mmToPt(12), mmToPt(23), { lineBreak: false });
+      // Top Logo or Brand Heading
+      const logoPath = path.join(process.cwd(), 'public', 'logo', 'machine-by-sohub.png');
+      if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, mmToPt(10), mmToPt(10), { width: mmToPt(42) });
+      } else {
+        doc.font('Helvetica-Bold').fontSize(20).fillColor('#0f172a')
+           .text('machine', mmToPt(10), mmToPt(10), { lineBreak: false });
+        doc.font('Helvetica-Bold').fontSize(12).fillColor('#ff5454')
+           .text('BY SOHUB', mmToPt(10), mmToPt(18), { lineBreak: false });
+      }
 
-      // Quotation Number
-      doc.font('Helvetica-Bold').fontSize(14).fillColor('#ff5454')
-         .text(`Quotation No: ${data.order_number}`, mmToPt(12), mmToPt(34), { lineBreak: false });
+      // Quotation Number Header
+      doc.font('Helvetica-Bold').fontSize(13).fillColor('#ff5454')
+         .text(`Quotation No: ${data.order_number || 'SHB-1001'}`, mmToPt(10), mmToPt(28), { lineBreak: false });
 
       // Customer Details Header + Date
       const dateString = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.');
-      doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a')
-         .text('Customer Details', mmToPt(12), mmToPt(46), { lineBreak: false });
-      doc.font('Helvetica').fontSize(10).fillColor('#0f172a')
-         .text(`Date: ${dateString}`, mmToPt(12), mmToPt(46), { align: 'right', width: mmToPt(186), lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a')
+         .text('Customer Details', mmToPt(10), mmToPt(38), { lineBreak: false });
+      doc.font('Helvetica').fontSize(9.5).fillColor('#0f172a')
+         .text(`Date: ${dateString}`, mmToPt(10), mmToPt(38), { align: 'right', width: mmToPt(190), lineBreak: false });
 
-      // Customer info
-      let currentY = mmToPt(54);
-      doc.font('Helvetica').fontSize(9).fillColor('#334155');
-      doc.text(`Name: ${data.customer_name || 'N/A'}`, mmToPt(12), currentY, { lineBreak: false });
-      currentY += mmToPt(5);
+      // Customer info lines
+      let currentY = mmToPt(44);
+      doc.font('Helvetica').fontSize(8.5).fillColor('#334155');
+      doc.text(`Name: ${data.customer_name || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
+      currentY += mmToPt(4.2);
       if (data.customer_company) {
-        doc.text(`Company: ${data.customer_company}`, mmToPt(12), currentY, { lineBreak: false });
-        currentY += mmToPt(5);
+        doc.text(`Company: ${data.customer_company}`, mmToPt(10), currentY, { lineBreak: false });
+        currentY += mmToPt(4.2);
       }
-      doc.text(`Email: ${data.customer_email || 'N/A'} | Phone: ${data.customer_phone || 'N/A'}`, mmToPt(12), currentY, { lineBreak: false });
-      currentY += mmToPt(5);
-      doc.text(`Delivery Location: ${data.delivery_location || 'N/A'}`, mmToPt(12), currentY, { lineBreak: false });
-      currentY += mmToPt(5);
+      doc.text(`Email: ${data.customer_email || 'N/A'} | Phone: ${data.customer_phone || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
+      currentY += mmToPt(4.2);
+      doc.text(`Delivery Location: ${data.delivery_location || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
+      currentY += mmToPt(4.2);
 
       // Table Header
-      currentY += mmToPt(6);
-      doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a');
-      doc.text('Particulars', mmToPt(12), currentY, { width: mmToPt(95), lineBreak: false });
+      currentY += mmToPt(4);
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#0f172a');
+      doc.text('Particulars', mmToPt(10), currentY, { width: mmToPt(95), lineBreak: false });
       doc.text('Qty', mmToPt(110), currentY, { width: mmToPt(25), align: 'center', lineBreak: false });
       doc.text('Unit Price', mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
-      doc.text('Total (BDT)', mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
+      doc.text('Total (BDT)', mmToPt(165), currentY, { width: mmToPt(35), align: 'right', lineBreak: false });
 
-      currentY += mmToPt(5);
+      currentY += mmToPt(4.5);
       doc.strokeColor('#0f172a').lineWidth(1)
-         .moveTo(mmToPt(12), currentY).lineTo(mmToPt(198), currentY).stroke();
-      currentY += mmToPt(4);
+         .moveTo(mmToPt(10), currentY).lineTo(mmToPt(200), currentY).stroke();
+      currentY += mmToPt(3);
 
       // Chassis Base Row
-      doc.font('Helvetica-Bold').fontSize(9).fillColor('#1e293b');
-      doc.text(`${data.chassis_title} (Base Machine)`, mmToPt(12), currentY, { width: mmToPt(95), lineBreak: false });
-      doc.font('Helvetica').fontSize(9);
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#1e293b');
+      doc.text(`${data.chassis_title} (Base Machine)`, mmToPt(10), currentY, { width: mmToPt(95), lineBreak: false });
+      doc.font('Helvetica').fontSize(8.5);
       doc.text('1', mmToPt(110), currentY, { width: mmToPt(25), align: 'center', lineBreak: false });
       const basePriceFormatted = Number(data.chassis_base_price || 0).toLocaleString('en-BD');
       doc.text(`BDT ${basePriceFormatted}`, mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
-      doc.text(`BDT ${basePriceFormatted}`, mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
-      currentY += mmToPt(6);
+      doc.text(`BDT ${basePriceFormatted}`, mmToPt(165), currentY, { width: mmToPt(35), align: 'right', lineBreak: false });
+      currentY += mmToPt(5);
 
-      // Selected Addons
+      // Selected Addons Rows
       const addons = data.selected_addons || [];
       for (const addon of addons) {
         const isTbd = addon.is_tbd || Number(addon.final_price) === 0;
-        doc.font('Helvetica').fontSize(9).fillColor('#334155');
-        doc.text(`+ ${addon.addon_name}`, mmToPt(12), currentY, { width: mmToPt(95), lineBreak: false });
+        doc.font('Helvetica').fontSize(8.5).fillColor('#334155');
+        doc.text(`+ ${addon.addon_name}`, mmToPt(10), currentY, { width: mmToPt(95), lineBreak: false });
         doc.text('1', mmToPt(110), currentY, { width: mmToPt(25), align: 'center', lineBreak: false });
         if (isTbd) {
           doc.text('TBD', mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
-          doc.text('TBD', mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
+          doc.text('TBD', mmToPt(165), currentY, { width: mmToPt(35), align: 'right', lineBreak: false });
         } else {
           const addonPriceFormatted = Number(addon.final_price).toLocaleString('en-BD');
           doc.text(`BDT ${addonPriceFormatted}`, mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
-          doc.text(`BDT ${addonPriceFormatted}`, mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
+          doc.text(`BDT ${addonPriceFormatted}`, mmToPt(165), currentY, { width: mmToPt(35), align: 'right', lineBreak: false });
         }
-        currentY += mmToPt(5.5);
+        currentY += mmToPt(4.5);
       }
 
       // Totals Divider
-      currentY += mmToPt(4);
-      doc.strokeColor('#cbd5e1').lineWidth(0.5)
-         .moveTo(mmToPt(120), currentY).lineTo(mmToPt(198), currentY).stroke();
       currentY += mmToPt(3);
+      doc.strokeColor('#cbd5e1').lineWidth(0.5)
+         .moveTo(mmToPt(120), currentY).lineTo(mmToPt(200), currentY).stroke();
+      currentY += mmToPt(2.5);
 
       // Subtotal
-      doc.font('Helvetica').fontSize(9).fillColor('#475569');
+      doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
       doc.text('Subtotal:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
-      doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a');
-      doc.text(`BDT ${Number(data.subtotal || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(38), align: 'right', lineBreak: false });
-      currentY += mmToPt(5);
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a');
+      doc.text(`BDT ${Number(data.subtotal || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(40), align: 'right', lineBreak: false });
+      currentY += mmToPt(4.2);
 
       // VAT
-      doc.font('Helvetica').fontSize(9).fillColor('#475569');
+      doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
       doc.text(`VAT (${data.vat_rate || 5}%):`, mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
-      doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a');
-      doc.text(`BDT ${Number(data.vat_amount || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(38), align: 'right', lineBreak: false });
-      currentY += mmToPt(6);
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a');
+      doc.text(`BDT ${Number(data.vat_amount || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(40), align: 'right', lineBreak: false });
+      currentY += mmToPt(5);
 
       // Grand Total
       doc.strokeColor('#0f172a').lineWidth(1)
-         .moveTo(mmToPt(120), currentY).lineTo(mmToPt(198), currentY).stroke();
-      currentY += mmToPt(3);
-      doc.font('Helvetica-Bold').fontSize(11).fillColor('#ff5454');
+         .moveTo(mmToPt(120), currentY).lineTo(mmToPt(200), currentY).stroke();
+      currentY += mmToPt(2.5);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#ff5454');
       doc.text('Grand Total:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
-      doc.text(`BDT ${Number(data.grand_total || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(38), align: 'right', lineBreak: false });
-      currentY += mmToPt(10);
+      doc.text(`BDT ${Number(data.grand_total || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(40), align: 'right', lineBreak: false });
+      currentY += mmToPt(7);
 
       // Terms & Conditions Notes Header
-      doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a');
-      doc.text('Terms, Conditions & Notes', mmToPt(12), currentY, { lineBreak: false });
-      currentY += mmToPt(5);
+      doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#0f172a');
+      doc.text('Terms, Conditions & Notes', mmToPt(10), currentY, { lineBreak: false });
+      currentY += mmToPt(4);
 
-      // Render notes lines
+      // Render notes lines DYNAMICALLY to prevent overlapping!
       const notesText = data.admin_notes || '';
       const notesLines = notesText.split('\n').filter(l => l.trim().length > 0);
-      doc.font('Helvetica').fontSize(7.5).fillColor('#475569');
+      doc.font('Helvetica').fontSize(7.2).fillColor('#334155');
+      
       for (const line of notesLines) {
-        if (currentY > mmToPt(275)) break;
-        doc.text(line, mmToPt(12), currentY, { width: mmToPt(186), lineBreak: true });
-        currentY += mmToPt(4);
+        if (currentY > mmToPt(265)) break; // Stop before footer zone
+        const lineH = doc.heightOfString(line, { width: mmToPt(190) });
+        doc.text(line, mmToPt(10), currentY, { width: mmToPt(190) });
+        currentY += lineH + mmToPt(1.2);
       }
 
-      // Footer
-      const footerY = mmToPt(297) - mmToPt(12);
-      doc.font('Helvetica').fontSize(8).fillColor('#64748b');
-      doc.text('For Support, Email: hello@sohub.com.bd | Phone: +880 1922-036882', mmToPt(12), footerY - mmToPt(4), { align: 'center', width: mmToPt(186), lineBreak: false });
-      doc.text('Machine by SOHUB — Building reliable machine infrastructure for Bangladesh', mmToPt(12), footerY, { align: 'center', width: mmToPt(186), lineBreak: false });
+      // Static Single Page Footer (Anchored near bottom)
+      const footerY = mmToPt(278);
+      doc.strokeColor('#e2e8f0').lineWidth(0.5)
+         .moveTo(mmToPt(10), footerY).lineTo(mmToPt(200), footerY).stroke();
+
+      doc.font('Helvetica').fontSize(7.5).fillColor('#64748b');
+      doc.text('For Support, Email: hello@sohub.com.bd | Phone: +880 1922-036882', mmToPt(10), footerY + mmToPt(2.5), { align: 'center', width: mmToPt(190), lineBreak: false });
+      doc.text('Machine by SOHUB — Building reliable machine infrastructure for Bangladesh', mmToPt(10), footerY + mmToPt(6.5), { align: 'center', width: mmToPt(190), lineBreak: false });
+
+      const sohubLogoPath = path.join(process.cwd(), 'public', 'logo', 'sohub.png');
+      if (fs.existsSync(sohubLogoPath)) {
+        doc.image(sohubLogoPath, mmToPt(175), footerY + mmToPt(2.5), { width: mmToPt(18) });
+      }
 
       doc.end();
     } catch (err) {
@@ -186,7 +203,6 @@ export default async function handler(req, res) {
       vat_amount,
       grand_total,
       admin_notes,
-      customer_notes,
     } = data;
 
     const lambdaUrl = process.env.LAMBDA_API_URL;
@@ -206,7 +222,7 @@ export default async function handler(req, res) {
       ? [{ filename: `Quotation_${order_number || 'SHB'}.pdf`, content: pdfBase64, encoding: 'base64' }]
       : [];
 
-    // Greetings Email Body
+    // Greetings Email Body with Logo Header
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">
@@ -216,8 +232,7 @@ export default async function handler(req, res) {
           body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px; color: #1e293b; }
           .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
           .header { text-align: center; border-bottom: 2px solid #ff5454; padding-bottom: 16px; margin-bottom: 24px; }
-          .header h1 { font-size: 24px; color: #0f172a; margin: 0; }
-          .header span { color: #ff5454; font-weight: bold; }
+          .header img { height: 38px; display: block; margin: 0 auto 8px auto; }
           .greeting { font-size: 15px; line-height: 1.6; color: #334155; }
           .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin: 20px 0; font-size: 13px; }
           .card h3 { margin-top: 0; color: #0f172a; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
@@ -231,7 +246,8 @@ export default async function handler(req, res) {
       <body>
         <div class="container">
           <div class="header">
-            <h1>machine <span>BY SOHUB</span></h1>
+            <img src="https://machines.sohub.com.bd/logo/machine-by-sohub.png" alt="Machine by SOHUB" onerror="this.style.display='none';" />
+            <h2 style="margin: 0; font-size: 20px; color: #0f172a;">machine <span style="color: #ff5454;">BY SOHUB</span></h2>
             <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Quotation Reference: #${order_number}</p>
           </div>
 
