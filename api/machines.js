@@ -33,14 +33,8 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
-      const publicRes = await publicSupabase
-        .from('chassis')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-        
-      return res.status(200).json(publicRes.data || []);
+      console.error('Supabase query error (sohub_admin.chassis):', error.message);
+      return res.status(500).json({ error: error.message });
     }
 
     return res.status(200).json(data || []);

@@ -57,17 +57,10 @@ export default async function handler(req, res) {
       status: 'Pending',
     };
 
-    let { data, error } = await supabase.from('orders').insert([payload]).select();
+    const { data, error } = await supabase.from('orders').insert([payload]).select();
 
     if (error) {
-      const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
-      const publicRes = await publicSupabase.from('orders').insert([payload]).select();
-      data = publicRes.data;
-      error = publicRes.error;
-    }
-
-    if (error) {
-      console.error('Order submission error:', error);
+      console.error('Order submission error in sohub_admin schema:', error);
       return res.status(400).json({ success: false, error: error.message });
     }
 

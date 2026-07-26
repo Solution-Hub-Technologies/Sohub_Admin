@@ -33,14 +33,8 @@ export default async function handler(req, res) {
       .order('sort_order', { ascending: true });
 
     if (error) {
-      const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
-      const publicRes = await publicSupabase
-        .from('addons')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-        
-      return res.status(200).json(publicRes.data || []);
+      console.error('Supabase query error (sohub_admin.addons):', error.message);
+      return res.status(500).json({ error: error.message });
     }
 
     return res.status(200).json(data || []);
