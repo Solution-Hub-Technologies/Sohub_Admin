@@ -246,8 +246,7 @@ export default async function handler(req, res) {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://machines.sohub.com.bd/logo/machine-by-sohub.png" alt="Machine by SOHUB" onerror="this.style.display='none';" />
-            <h2 style="margin: 0; font-size: 20px; color: #0f172a;">machine <span style="color: #ff5454;">BY SOHUB</span></h2>
+            <img src="https://machines.sohub.com.bd/logo/machine-by-sohub.png" alt="Machine by SOHUB" style="height: 44px; display: block; margin: 0 auto 10px auto;" />
             <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Quotation Reference: #${order_number}</p>
           </div>
 
