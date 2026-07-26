@@ -38,6 +38,7 @@ viii. The monthly recurring service fee shall become effective from the date of 
 export const OrdersModule: React.FC = () => {
   const {
     orders,
+    addonsList,
     globalSearch,
     setGlobalSearch,
     selectedOrder,
@@ -100,6 +101,26 @@ export const OrdersModule: React.FC = () => {
     const updated = [...drawerAddons];
     updated[index].final_price = newPrice;
     setDrawerAddons(updated);
+  };
+
+  const handleAddAddonFromMaster = (masterAddonId: string) => {
+    if (!masterAddonId) return;
+    const masterAddon = addonsList.find((a) => a.id === masterAddonId);
+    if (!masterAddon) return;
+
+    const newItem: SelectedAddonItem = {
+      addon_id: masterAddon.id,
+      addon_name: masterAddon.name,
+      original_price: masterAddon.price,
+      is_tbd: masterAddon.is_tbd,
+      final_price: masterAddon.price,
+    };
+
+    setDrawerAddons((prev) => [...prev, newItem]);
+  };
+
+  const handleRemoveAddon = (index: number) => {
+    setDrawerAddons((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSaveAndSend = async () => {
@@ -471,10 +492,46 @@ export const OrdersModule: React.FC = () => {
                             placeholder="0 (TBD)"
                             className="w-28 px-2.5 py-1.5 text-xs font-bold text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#ff751a] focus:outline-none text-right"
                           />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAddon(idx)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 transition-colors cursor-pointer rounded-lg hover:bg-red-50"
+                            title="Remove Add-on"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     );
                   })}
+
+                  {/* Add Existing Master Add-on Dropdown Selector */}
+                  <div className="pt-2">
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        handleAddAddonFromMaster(e.target.value);
+                        e.target.value = '';
+                      }}
+                      className="w-full px-3 py-2 text-xs font-bold text-slate-700 bg-white border border-dashed border-slate-300 rounded-xl focus:ring-2 focus:ring-[#ff751a] focus:outline-none hover:border-[#ff751a] transition-colors cursor-pointer"
+                    >
+                      <option value="" disabled>
+                        + Add Existing Master Add-on from System...
+                      </option>
+                      {addonsList
+                        .filter(
+                          (a) =>
+                            !drawerAddons.some(
+                              (d) => d.addon_id === a.id || d.addon_name.toLowerCase() === a.name.toLowerCase()
+                            )
+                        )
+                        .map((a) => (
+                          <option key={a.id} value={a.id}>
+                            + {a.name} ({a.is_tbd || a.price === 0 ? 'TBD' : `৳${a.price.toLocaleString('en-BD')}`})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
