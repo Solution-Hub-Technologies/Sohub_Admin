@@ -71,12 +71,8 @@ const getPDFBuffer = (data) => {
       const machineImgPath = path.join(process.cwd(), 'public', 'images', machineImgFile);
 
       if (fs.existsSync(machineImgPath)) {
-        // Draw white frame box for machine image
-        doc.roundedRect(mmToPt(150), mmToPt(10), mmToPt(50), mmToPt(48), 4)
-           .fillAndStroke('#ffffff', '#cbd5e1');
-        
-        doc.image(machineImgPath, mmToPt(152), mmToPt(12), {
-          fit: [mmToPt(46), mmToPt(44)],
+        doc.image(machineImgPath, mmToPt(150), mmToPt(10), {
+          fit: [mmToPt(50), mmToPt(48)],
           align: 'center',
           valign: 'center',
         });
@@ -256,12 +252,12 @@ export default async function handler(req, res) {
       ? [{ filename: `Quotation_${order_number || 'SHB'}.pdf`, content: pdfBase64, encoding: 'base64' }]
       : [];
 
-    let webMachineImgName = 'imported_sv_1-By_gC-Fp.png';
+    let webMachineImgFile = 'imported_sv_1.png';
     const cLower = (chassis_title || '').toLowerCase();
     if (cLower.includes('local')) {
-      webMachineImgName = 'sohub-snacks-local-ByKdZlyB.png';
+      webMachineImgFile = 'sohub-snacks-local.png';
     } else if (cLower.includes('fridge') || cLower.includes('smart')) {
-      webMachineImgName = 'machine-smart-fridge-BZ5eucqY.jpg';
+      webMachineImgFile = 'machine-smart-fridge.png';
     }
 
     // Greetings Email Body with Logo Header & Machine Image
@@ -276,8 +272,8 @@ export default async function handler(req, res) {
           .header { text-align: center; border-bottom: 2px solid #ff5454; padding-bottom: 16px; margin-bottom: 24px; }
           .header img { height: 44px; display: block; margin: 0 auto 10px auto; }
           .greeting { font-size: 15px; line-height: 1.6; color: #334155; }
-          .machine-box { text-align: center; margin: 20px 0; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
-          .machine-box img { max-height: 180px; max-width: 100%; object-fit: contain; }
+          .machine-box { text-align: center; margin: 16px 0; padding: 10px; }
+          .machine-box img { max-height: 210px; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08)); }
           .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin: 20px 0; font-size: 13px; }
           .card h3 { margin-top: 0; color: #0f172a; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
           .summary-item { display: flex; justify-content: space-between; margin-bottom: 6px; }
@@ -301,7 +297,7 @@ export default async function handler(req, res) {
           </div>
 
           <div class="machine-box">
-            <img src="https://machines.sohub.com.bd/assets/${webMachineImgName}" alt="${chassis_title}" />
+            <img src="https://sohub-admin.vercel.app/images/${webMachineImgFile}" alt="${chassis_title}" />
             <p style="margin: 8px 0 0 0; font-size: 12px; font-weight: bold; color: #0f172a;">${chassis_title}</p>
           </div>
 
