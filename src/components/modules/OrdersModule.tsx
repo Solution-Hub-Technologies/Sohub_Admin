@@ -55,7 +55,8 @@ export const OrdersModule: React.FC = () => {
   // Local state for Slide-over Re-estimation Drawer
   const [drawerChassisPrice, setDrawerChassisPrice] = useState<number>(0);
   const [drawerAddons, setDrawerAddons] = useState<SelectedAddonItem[]>([]);
-  const [drawerVatRate, setDrawerVatRate] = useState<number>(5);
+  const [drawerTaxRate, setDrawerTaxRate] = useState<number>(5);
+  const [drawerVatRate, setDrawerVatRate] = useState<number>(10);
   const [drawerMonthlyFee, setDrawerMonthlyFee] = useState<number>(5000);
   const [drawerNotes, setDrawerNotes] = useState<string>('');
 
@@ -71,7 +72,8 @@ export const OrdersModule: React.FC = () => {
     if (selectedOrder) {
       setDrawerChassisPrice(selectedOrder.chassis_base_price || 0);
       setDrawerAddons(JSON.parse(JSON.stringify(selectedOrder.selected_addons || [])));
-      setDrawerVatRate(selectedOrder.vat_rate || 5);
+      setDrawerTaxRate(selectedOrder.tax_rate !== undefined ? selectedOrder.tax_rate : 5);
+      setDrawerVatRate(selectedOrder.vat_rate !== undefined ? selectedOrder.vat_rate : 10);
       setDrawerMonthlyFee(selectedOrder.monthly_recurring_fee || 5000);
       setDrawerNotes(selectedOrder.admin_notes || DEFAULT_QUOTATION_NOTES);
     }
@@ -94,8 +96,11 @@ export const OrdersModule: React.FC = () => {
   // Calculate live calculations inside the drawer
   const liveAddonsTotal = drawerAddons.reduce((sum, item) => sum + (Number(item.final_price) || 0), 0);
   const liveSubtotal = Number(drawerChassisPrice || 0) + liveAddonsTotal;
-  const liveVatAmount = Math.round((liveSubtotal * (Number(drawerVatRate) || 0)) / 100);
-  const liveGrandTotal = liveSubtotal + liveVatAmount;
+  const liveTaxAmount = drawerTaxRate > 0 && drawerTaxRate < 100
+    ? Math.round((liveSubtotal * 100) / (100 - drawerTaxRate) - liveSubtotal)
+    : 0;
+  const liveVatAmount = Math.round((liveSubtotal + liveTaxAmount) * ((Number(drawerVatRate) || 0) / 100));
+  const liveGrandTotal = liveSubtotal + liveTaxAmount + liveVatAmount;
 
   const handleAddonPriceChange = (index: number, newPrice: number) => {
     const updated = [...drawerAddons];
@@ -135,7 +140,8 @@ export const OrdersModule: React.FC = () => {
         drawerMonthlyFee,
         drawerNotes,
         undefined,
-        drawerChassisPrice
+        drawerChassisPrice,
+        drawerTaxRate
       );
     } finally {
       setIsSendingLambda(false);
@@ -559,17 +565,30 @@ export const OrdersModule: React.FC = () => {
               {/* Financial Breakdown Box */}
               <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-4 shadow-lg">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#ff751a] flex items-center gap-1.5">
-                  <Calculator className="w-4 h-4" /> VAT & Live Grand Total Breakdown
+                  <Calculator className="w-4 h-4" /> Tax, VAT & Live Grand Total Breakdown
                 </h3>
 
-                <div>
-                  <label className="block text-slate-400 font-semibold mb-1 text-xs">VAT Rate (%)</label>
-                  <input
-                    type="number"
-                    value={drawerVatRate}
-                    onChange={(e) => setDrawerVatRate(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a]"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1 text-[11px]">Tax Rate (%)</label>
+                    <input
+                      type="number"
+                      value={drawerTaxRate}
+                      onChange={(e) => setDrawerTaxRate(parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a] text-xs"
+                      placeholder="5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1 text-[11px]">VAT Rate (%)</label>
+                    <input
+                      type="number"
+                      value={drawerVatRate}
+                      onChange={(e) => setDrawerVatRate(parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 text-white font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a] text-xs"
+                      placeholder="10"
+                    />
+                  </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-800 space-y-1.5 text-xs">
@@ -582,12 +601,16 @@ export const OrdersModule: React.FC = () => {
                     <span className="font-mono">৳{liveAddonsTotal.toLocaleString('en-BD')}</span>
                   </div>
                   <div className="flex justify-between text-slate-300 font-semibold pt-1 border-t border-slate-800/80">
-                    <span>Subtotal:</span>
+                    <span>Subtotal Amount (Excl. VAT & Tax):</span>
                     <span className="font-mono">৳{liveSubtotal.toLocaleString('en-BD')}</span>
                   </div>
                   <div className="flex justify-between text-slate-400">
+                    <span>Tax ({drawerTaxRate}%):</span>
+                    <span className="font-mono text-amber-400">৳{liveTaxAmount.toLocaleString('en-BD')}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
                     <span>VAT ({drawerVatRate}%):</span>
-                    <span className="font-mono">৳{liveVatAmount.toLocaleString('en-BD')}</span>
+                    <span className="font-mono text-emerald-400">৳{liveVatAmount.toLocaleString('en-BD')}</span>
                   </div>
                   <div className="flex justify-between text-base font-extrabold text-[#ff751a] pt-2 border-t border-slate-700">
                     <span>Grand Total:</span>

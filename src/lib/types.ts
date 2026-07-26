@@ -66,7 +66,9 @@ export interface Order {
   quantity?: number; // Quantity of machines ordered
   selected_addons: SelectedAddonItem[];
   subtotal: number;
-  vat_rate: number; // e.g. 5 for 5%
+  tax_rate?: number; // e.g. 5 for 5%
+  tax_amount?: number;
+  vat_rate: number; // e.g. 10 for 10%
   vat_amount: number;
   monthly_recurring_fee: number; // Default 5000 BDT/month
   grand_total: number;

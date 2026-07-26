@@ -60,7 +60,9 @@ interface AppContextType {
     vatRate: number,
     monthlyFee: number,
     adminNotes?: string,
-    customTerms?: string
+    customTerms?: string,
+    updatedChassisPrice?: number,
+    taxRate?: number
   ) => Promise<boolean>;
   saveChassis: (chassis: Partial<Chassis>) => Promise<void>;
   toggleChassisStatus: (id: string) => Promise<void>;
@@ -520,7 +522,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     monthlyFee: number,
     adminNotes?: string,
     customTerms?: string,
-    updatedChassisPrice?: number
+    updatedChassisPrice?: number,
+    taxRate?: number
   ): Promise<boolean> => {
     const targetOrder = orders.find((o) => o.id === orderId);
     if (!targetOrder) return false;
@@ -528,14 +531,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const chassisPrice = updatedChassisPrice !== undefined ? updatedChassisPrice : targetOrder.chassis_base_price;
     const addonsTotal = updatedAddons.reduce((acc, curr) => acc + (Number(curr.final_price) || 0), 0);
     const subtotal = chassisPrice + addonsTotal;
-    const vatAmount = Math.round((subtotal * vatRate) / 100);
-    const grandTotal = subtotal + vatAmount;
+
+    const finalTaxRate = taxRate !== undefined ? taxRate : (targetOrder.tax_rate ?? 5);
+    const taxAmount = finalTaxRate > 0 && finalTaxRate < 100
+      ? Math.round((subtotal * 100) / (100 - finalTaxRate) - subtotal)
+      : 0;
+
+    const vatAmount = Math.round((subtotal + taxAmount) * (vatRate / 100));
+    const grandTotal = subtotal + taxAmount + vatAmount;
 
     const updatedOrder: Order = {
       ...targetOrder,
       chassis_base_price: chassisPrice,
       selected_addons: updatedAddons,
       subtotal,
+      tax_rate: finalTaxRate,
+      tax_amount: taxAmount,
       vat_rate: vatRate,
       vat_amount: vatAmount,
       monthly_recurring_fee: monthlyFee,
@@ -578,6 +589,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           chassis_base_price: chassisPrice,
           selected_addons: updatedAddons,
           subtotal,
+          tax_rate: finalTaxRate,
+          tax_amount: taxAmount,
           vat_rate: vatRate,
           vat_amount: vatAmount,
           monthly_recurring_fee: monthlyFee,

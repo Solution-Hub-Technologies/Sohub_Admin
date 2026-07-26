@@ -147,27 +147,52 @@ const getPDFBuffer = (data) => {
          .moveTo(mmToPt(120), currentY).lineTo(mmToPt(200), currentY).stroke();
       currentY += mmToPt(2.5);
 
+      // Financial Calculations (Exact formula from Excel: Tax on Gross, VAT on Subtotal + Tax)
+      const subtotalVal = Number(data.subtotal || 0);
+      const taxRateVal = data.tax_rate !== undefined ? Number(data.tax_rate) : 5;
+      const taxAmountVal = data.tax_amount !== undefined && data.tax_amount !== null
+        ? Number(data.tax_amount)
+        : (taxRateVal > 0 && taxRateVal < 100 ? Math.round((subtotalVal * 100) / (100 - taxRateVal) - subtotalVal) : 0);
+      
+      const vatRateVal = data.vat_rate !== undefined ? Number(data.vat_rate) : 10;
+      const vatAmountVal = data.vat_amount !== undefined && data.vat_amount !== null
+        ? Number(data.vat_amount)
+        : Math.round((subtotalVal + taxAmountVal) * (vatRateVal / 100));
+
+      const grandTotalVal = data.grand_total !== undefined && data.grand_total !== null
+        ? Number(data.grand_total)
+        : (subtotalVal + taxAmountVal + vatAmountVal);
+
       // Subtotal
       doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
-      doc.text('Subtotal:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
+      doc.text('Subtotal (Excl. VAT & Tax):', mmToPt(105), currentY, { width: mmToPt(55), lineBreak: false });
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a');
-      doc.text(`BDT ${Number(data.subtotal || 0).toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
+      doc.text(`BDT ${subtotalVal.toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
       currentY += mmToPt(4.2);
+
+      // Tax (rendered if taxRateVal > 0)
+      if (taxRateVal > 0) {
+        doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
+        doc.text(`Tax (${taxRateVal}%):`, mmToPt(105), currentY, { width: mmToPt(55), lineBreak: false });
+        doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a');
+        doc.text(`BDT ${taxAmountVal.toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
+        currentY += mmToPt(4.2);
+      }
 
       // VAT
       doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
-      doc.text(`VAT (${data.vat_rate || 5}%):`, mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
+      doc.text(`VAT (${vatRateVal}%):`, mmToPt(105), currentY, { width: mmToPt(55), lineBreak: false });
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a');
-      doc.text(`BDT ${Number(data.vat_amount || 0).toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
+      doc.text(`BDT ${vatAmountVal.toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
       currentY += mmToPt(5);
 
       // Grand Total
       doc.strokeColor('#0f172a').lineWidth(1)
-         .moveTo(mmToPt(120), currentY).lineTo(mmToPt(200), currentY).stroke();
+         .moveTo(mmToPt(105), currentY).lineTo(mmToPt(200), currentY).stroke();
       currentY += mmToPt(2.5);
       doc.font('Helvetica-Bold').fontSize(10).fillColor('#ff5454');
-      doc.text('Grand Total:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
-      doc.text(`BDT ${Number(data.grand_total || 0).toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
+      doc.text('Grand Total:', mmToPt(105), currentY, { width: mmToPt(55), lineBreak: false });
+      doc.text(`BDT ${grandTotalVal.toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
       currentY += mmToPt(7);
 
       // Terms & Conditions Notes Header
