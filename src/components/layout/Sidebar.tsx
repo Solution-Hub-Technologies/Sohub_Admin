@@ -77,7 +77,7 @@ export const Sidebar: React.FC = () => {
 
             <div className="leading-tight">
               <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block group-hover:text-[#ff751a] transition-colors">
-                ENTERPRISE
+                INITIATIVES
               </span>
               <span className="text-sm font-extrabold text-white tracking-tight">
                 SOHUB Machines
@@ -91,11 +91,11 @@ export const Sidebar: React.FC = () => {
           )}
         </div>
 
-        {/* Enterprise Dropdown Menu */}
+        {/* Enterprise Initiatives Dropdown Menu */}
         {isDropdownOpen && (
           <div className="absolute top-full left-4 right-4 mt-2 p-2 bg-slate-950 border border-slate-700/90 rounded-2xl shadow-2xl space-y-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
             <div className="px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 flex items-center justify-between border-b border-slate-800 mb-1 pb-2">
-              <span>SOHUB Enterprise Portals</span>
+              <span>SOHUB Initiatives Portals</span>
               <Sparkles className="w-3 h-3 text-[#ff751a]" />
             </div>
 
