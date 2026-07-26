@@ -72,7 +72,7 @@ export const Sidebar: React.FC = () => {
           <div className="flex items-center gap-3">
             {/* Official SOHUB Favicon Logo */}
             <div className="w-9 h-9 rounded-xl bg-slate-950 border border-slate-700/80 p-1 flex items-center justify-center shadow-md shrink-0">
-              <img src="/logo/sohub.png" alt="SOHUB" className="w-full h-full object-contain" />
+              <img src="/favicon.png" alt="SOHUB Machines" className="w-full h-full object-contain" />
             </div>
 
             <div className="leading-tight">
