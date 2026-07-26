@@ -24,44 +24,66 @@ const getPDFBuffer = (data) => {
       // Page background
       doc.rect(0, 0, mmToPt(210), mmToPt(297)).fill('#f6f5f2');
 
-      // Top Logo or Brand Heading
+      // Top Logo
       const logoPath = path.join(process.cwd(), 'public', 'logo', 'machine-by-sohub.png');
       if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, mmToPt(10), mmToPt(10), { width: mmToPt(42) });
+        doc.image(logoPath, mmToPt(10), mmToPt(10), { width: mmToPt(40) });
       } else {
-        doc.font('Helvetica-Bold').fontSize(20).fillColor('#0f172a')
+        doc.font('Helvetica-Bold').fontSize(18).fillColor('#0f172a')
            .text('machine', mmToPt(10), mmToPt(10), { lineBreak: false });
-        doc.font('Helvetica-Bold').fontSize(12).fillColor('#ff5454')
-           .text('BY SOHUB', mmToPt(10), mmToPt(18), { lineBreak: false });
+        doc.font('Helvetica-Bold').fontSize(11).fillColor('#ff5454')
+           .text('BY SOHUB', mmToPt(10), mmToPt(17), { lineBreak: false });
       }
 
       // Quotation Number Header
-      doc.font('Helvetica-Bold').fontSize(13).fillColor('#ff5454')
-         .text(`Quotation No: ${data.order_number || 'SHB-1001'}`, mmToPt(10), mmToPt(28), { lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(12.5).fillColor('#ff5454')
+         .text(`Quotation No: ${data.order_number || 'SHB-1001'}`, mmToPt(10), mmToPt(26), { lineBreak: false });
 
       // Customer Details Header + Date
       const dateString = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.');
-      doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#0f172a')
-         .text('Customer Details', mmToPt(10), mmToPt(38), { lineBreak: false });
-      doc.font('Helvetica').fontSize(9.5).fillColor('#0f172a')
-         .text(`Date: ${dateString}`, mmToPt(10), mmToPt(38), { align: 'right', width: mmToPt(190), lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a')
+         .text('Customer Details', mmToPt(10), mmToPt(36), { lineBreak: false });
+      doc.font('Helvetica').fontSize(9).fillColor('#0f172a')
+         .text(`Date: ${dateString}`, mmToPt(10), mmToPt(36), { width: mmToPt(135), align: 'right', lineBreak: false });
 
       // Customer info lines
-      let currentY = mmToPt(44);
+      let currentY = mmToPt(42);
       doc.font('Helvetica').fontSize(8.5).fillColor('#334155');
-      doc.text(`Name: ${data.customer_name || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
+      doc.text(`Name: ${data.customer_name || 'N/A'}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
       currentY += mmToPt(4.2);
       if (data.customer_company) {
-        doc.text(`Company: ${data.customer_company}`, mmToPt(10), currentY, { lineBreak: false });
+        doc.text(`Company: ${data.customer_company}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
         currentY += mmToPt(4.2);
       }
-      doc.text(`Email: ${data.customer_email || 'N/A'} | Phone: ${data.customer_phone || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
+      doc.text(`Email: ${data.customer_email || 'N/A'} | Phone: ${data.customer_phone || 'N/A'}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
       currentY += mmToPt(4.2);
-      doc.text(`Delivery Location: ${data.delivery_location || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
+      doc.text(`Delivery Location: ${data.delivery_location || 'N/A'}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
       currentY += mmToPt(4.2);
 
+      // Top-Right Machine Preview Image Card
+      let machineImgFile = 'imported_sv_1.png';
+      const chassisLower = (data.chassis_title || '').toLowerCase();
+      if (chassisLower.includes('local')) {
+        machineImgFile = 'sohub-snacks-local.png';
+      } else if (chassisLower.includes('fridge') || chassisLower.includes('smart')) {
+        machineImgFile = 'machine-smart-fridge.jpg';
+      }
+      const machineImgPath = path.join(process.cwd(), 'public', 'images', machineImgFile);
+
+      if (fs.existsSync(machineImgPath)) {
+        // Draw white frame box for machine image
+        doc.roundedRect(mmToPt(150), mmToPt(10), mmToPt(50), mmToPt(48), 4)
+           .fillAndStroke('#ffffff', '#cbd5e1');
+        
+        doc.image(machineImgPath, mmToPt(152), mmToPt(12), {
+          fit: [mmToPt(46), mmToPt(44)],
+          align: 'center',
+          valign: 'center',
+        });
+      }
+
       // Table Header
-      currentY += mmToPt(4);
+      currentY = Math.max(currentY + mmToPt(4), mmToPt(62));
       doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#0f172a');
       doc.text('Particulars', mmToPt(10), currentY, { width: mmToPt(95), lineBreak: false });
       doc.text('Qty', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
@@ -234,7 +256,15 @@ export default async function handler(req, res) {
       ? [{ filename: `Quotation_${order_number || 'SHB'}.pdf`, content: pdfBase64, encoding: 'base64' }]
       : [];
 
-    // Greetings Email Body with Logo Header
+    let webMachineImgName = 'imported_sv_1-By_gC-Fp.png';
+    const cLower = (chassis_title || '').toLowerCase();
+    if (cLower.includes('local')) {
+      webMachineImgName = 'sohub-snacks-local-ByKdZlyB.png';
+    } else if (cLower.includes('fridge') || cLower.includes('smart')) {
+      webMachineImgName = 'machine-smart-fridge-BZ5eucqY.jpg';
+    }
+
+    // Greetings Email Body with Logo Header & Machine Image
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">
@@ -244,8 +274,10 @@ export default async function handler(req, res) {
           body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px; color: #1e293b; }
           .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
           .header { text-align: center; border-bottom: 2px solid #ff5454; padding-bottom: 16px; margin-bottom: 24px; }
-          .header img { height: 38px; display: block; margin: 0 auto 8px auto; }
+          .header img { height: 44px; display: block; margin: 0 auto 10px auto; }
           .greeting { font-size: 15px; line-height: 1.6; color: #334155; }
+          .machine-box { text-align: center; margin: 20px 0; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+          .machine-box img { max-height: 180px; max-width: 100%; object-fit: contain; }
           .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin: 20px 0; font-size: 13px; }
           .card h3 { margin-top: 0; color: #0f172a; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
           .summary-item { display: flex; justify-content: space-between; margin-bottom: 6px; }
@@ -266,6 +298,11 @@ export default async function handler(req, res) {
             <p>Dear <strong>${customer_name || 'Valued Customer'}</strong>,</p>
             <p>Greetings from <strong>Machine by SOHUB</strong>!</p>
             <p>Following our recent discussion and re-estimation, we are pleased to present the official quotation for your vending machine requirement. Please find the detailed quotation PDF attached to this email (<code>Quotation_${order_number}.pdf</code>).</p>
+          </div>
+
+          <div class="machine-box">
+            <img src="https://machines.sohub.com.bd/assets/${webMachineImgName}" alt="${chassis_title}" />
+            <p style="margin: 8px 0 0 0; font-size: 12px; font-weight: bold; color: #0f172a;">${chassis_title}</p>
           </div>
 
           <div class="card">
