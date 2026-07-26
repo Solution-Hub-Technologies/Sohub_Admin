@@ -83,21 +83,27 @@ const getPDFBuffer = (data) => {
       }
       const machineImgPath = path.join(process.cwd(), 'public', 'images', machineImgFile);
 
-      if (fs.existsSync(machineImgPath)) {
-        doc.image(machineImgPath, mmToPt(10), currentY, {
-          fit: [mmToPt(22), mmToPt(32)],
+      // Particulars Rows
+      const hasImage = fs.existsSync(machineImgPath);
+      const particularX = hasImage ? mmToPt(34) : mmToPt(10);
+      const particularWidth = hasImage ? mmToPt(71) : mmToPt(95);
+      const tableRowsStartY = currentY;
+
+      // Render Machine Image Thumbnail right next to Particulars rows
+      if (hasImage) {
+        doc.image(machineImgPath, mmToPt(10), tableRowsStartY, {
+          fit: [mmToPt(22), mmToPt(30)],
           align: 'center',
           valign: 'top',
         });
       }
 
-      // Particulars Rows (Shifted slightly to the right to sit nicely next to machine thumbnail)
-      const particularX = fs.existsSync(machineImgPath) ? mmToPt(34) : mmToPt(10);
-      const particularWidth = fs.existsSync(machineImgPath) ? mmToPt(71) : mmToPt(95);
-
       // Chassis Base Row
+      const chassisText = `${data.chassis_title} (Base Machine)`;
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#1e293b');
-      doc.text(`${data.chassis_title} (Base Machine)`, particularX, currentY, { width: particularWidth, lineBreak: false });
+      doc.text(chassisText, particularX, currentY, { width: particularWidth });
+      const chassisHeight = doc.heightOfString(chassisText, { width: particularWidth });
+
       doc.font('Helvetica').fontSize(8.5);
       doc.text('1', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
       const basePriceFormatted = Number(data.chassis_base_price || 0).toLocaleString('en-BD');
@@ -109,15 +115,20 @@ const getPDFBuffer = (data) => {
       // Total price: BDT left aligned at 164mm, amount right aligned to 200mm
       doc.text('BDT', mmToPt(164), currentY, { lineBreak: false });
       doc.text(basePriceFormatted, mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
-      currentY += mmToPt(5);
+      
+      currentY += Math.max(chassisHeight, mmToPt(4.5)) + mmToPt(1.2);
 
       // Selected Addons Rows
       const addons = data.selected_addons || [];
       for (const addon of addons) {
         const isTbd = addon.is_tbd || Number(addon.final_price) === 0;
+        const addonText = `+ ${addon.addon_name}`;
+        const addonHeight = doc.heightOfString(addonText, { width: particularWidth });
+
         doc.font('Helvetica').fontSize(8.5).fillColor('#334155');
-        doc.text(`+ ${addon.addon_name}`, particularX, currentY, { width: particularWidth, lineBreak: false });
+        doc.text(addonText, particularX, currentY, { width: particularWidth });
         doc.text('1', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
+
         if (isTbd) {
           doc.text('TBD', mmToPt(128), currentY, { width: mmToPt(34), align: 'right', lineBreak: false });
           doc.text('TBD', mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
@@ -129,11 +140,13 @@ const getPDFBuffer = (data) => {
           doc.text('BDT', mmToPt(164), currentY, { lineBreak: false });
           doc.text(addonPriceFormatted, mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
         }
-        currentY += mmToPt(4.5);
+        currentY += Math.max(addonHeight, mmToPt(4.2)) + mmToPt(1.2);
       }
 
       // Ensure currentY accounts for height of machine thumbnail if addons list is short
-      currentY = Math.max(currentY, currentY + mmToPt(2));
+      if (hasImage) {
+        currentY = Math.max(currentY, tableRowsStartY + mmToPt(31));
+      }
 
       // Totals Divider
       currentY += mmToPt(3);
