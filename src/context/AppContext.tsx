@@ -519,18 +519,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     vatRate: number,
     monthlyFee: number,
     adminNotes?: string,
-    customTerms?: string
+    customTerms?: string,
+    updatedChassisPrice?: number
   ): Promise<boolean> => {
     const targetOrder = orders.find((o) => o.id === orderId);
     if (!targetOrder) return false;
 
-    const addonsTotal = updatedAddons.reduce((acc, curr) => acc + curr.final_price, 0);
-    const subtotal = targetOrder.chassis_base_price + addonsTotal;
+    const chassisPrice = updatedChassisPrice !== undefined ? updatedChassisPrice : targetOrder.chassis_base_price;
+    const addonsTotal = updatedAddons.reduce((acc, curr) => acc + (Number(curr.final_price) || 0), 0);
+    const subtotal = chassisPrice + addonsTotal;
     const vatAmount = Math.round((subtotal * vatRate) / 100);
     const grandTotal = subtotal + vatAmount;
 
     const updatedOrder: Order = {
       ...targetOrder,
+      chassis_base_price: chassisPrice,
       selected_addons: updatedAddons,
       subtotal,
       vat_rate: vatRate,
@@ -545,6 +548,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setOrders((prev) => prev.map((o) => (o.id === orderId ? updatedOrder : o)));
     setSelectedOrder(updatedOrder);
+
+    try {
+      fetch('/api/send-quotation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedOrder),
+      }).catch((e) => console.warn('Lambda API send trigger warning:', e));
+    } catch (e) {
+      console.warn('API send exception:', e);
+    }
 
     showToast(
       `Quotation #${targetOrder.order_number} saved & email sent to ${targetOrder.customer_email}!`,
@@ -562,7 +575,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           customer_company: targetOrder.customer_company,
           delivery_location: targetOrder.delivery_location,
           chassis_title: targetOrder.chassis_title,
-          chassis_base_price: targetOrder.chassis_base_price,
+          chassis_base_price: chassisPrice,
           selected_addons: updatedAddons,
           subtotal,
           vat_rate: vatRate,

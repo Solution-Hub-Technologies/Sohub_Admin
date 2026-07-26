@@ -42,11 +42,11 @@ export const OrdersModule: React.FC = () => {
   const [isSendingLambda, setIsSendingLambda] = useState<boolean>(false);
 
   // Local state for Slide-over Re-estimation Drawer
+  const [drawerChassisPrice, setDrawerChassisPrice] = useState<number>(0);
   const [drawerAddons, setDrawerAddons] = useState<SelectedAddonItem[]>([]);
   const [drawerVatRate, setDrawerVatRate] = useState<number>(5);
   const [drawerMonthlyFee, setDrawerMonthlyFee] = useState<number>(5000);
   const [drawerNotes, setDrawerNotes] = useState<string>('');
-  const [showBankNotesAccordion, setShowBankNotesAccordion] = useState<boolean>(false);
 
   // Stats calculation
   const pendingCount = orders.filter((o) => o.status === 'Pending').length;
@@ -58,10 +58,11 @@ export const OrdersModule: React.FC = () => {
   // Populate drawer whenever selectedOrder changes
   useEffect(() => {
     if (selectedOrder) {
-      setDrawerAddons(JSON.parse(JSON.stringify(selectedOrder.selected_addons)));
+      setDrawerChassisPrice(selectedOrder.chassis_base_price || 0);
+      setDrawerAddons(JSON.parse(JSON.stringify(selectedOrder.selected_addons || [])));
       setDrawerVatRate(selectedOrder.vat_rate || 5);
       setDrawerMonthlyFee(selectedOrder.monthly_recurring_fee || 5000);
-      setDrawerNotes(selectedOrder.admin_notes || '');
+      setDrawerNotes(selectedOrder.admin_notes || selectedOrder.customer_notes || '');
     }
   }, [selectedOrder]);
 
@@ -80,9 +81,8 @@ export const OrdersModule: React.FC = () => {
   });
 
   // Calculate live calculations inside the drawer
-  const chassisBasePrice = selectedOrder?.chassis_base_price || 0;
   const liveAddonsTotal = drawerAddons.reduce((sum, item) => sum + (Number(item.final_price) || 0), 0);
-  const liveSubtotal = chassisBasePrice + liveAddonsTotal;
+  const liveSubtotal = Number(drawerChassisPrice || 0) + liveAddonsTotal;
   const liveVatAmount = Math.round((liveSubtotal * (Number(drawerVatRate) || 0)) / 100);
   const liveGrandTotal = liveSubtotal + liveVatAmount;
 
@@ -96,13 +96,15 @@ export const OrdersModule: React.FC = () => {
     if (!selectedOrder) return;
     setIsSendingLambda(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       await saveAndResendQuotation(
         selectedOrder.id,
         drawerAddons,
         drawerVatRate,
         drawerMonthlyFee,
-        drawerNotes
+        drawerNotes,
+        undefined,
+        drawerChassisPrice
       );
     } finally {
       setIsSendingLambda(false);
@@ -118,7 +120,7 @@ export const OrdersModule: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 select-none">
-      {/* Streamlined Ultra-Fast Top Stat Cards */}
+      {/* Streamlined Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-subtle flex items-center justify-between">
           <div className="space-y-1">
@@ -376,6 +378,17 @@ export const OrdersModule: React.FC = () => {
                   </p>
                   <p className="font-medium text-slate-800">{selectedOrder.delivery_location}</p>
                 </div>
+
+                {(selectedOrder.customer_notes || selectedOrder.admin_notes) && (
+                  <div className="pt-2 border-t border-slate-200/60 text-xs">
+                    <p className="text-slate-400 flex items-center gap-1 font-semibold">
+                      <FileText className="w-3.5 h-3.5 text-[#ff751a]" /> Customer Inquiry Notes:
+                    </p>
+                    <p className="font-medium text-slate-800 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200/80 mt-1 italic">
+                      "{selectedOrder.customer_notes || selectedOrder.admin_notes}"
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Status Quick Changer Buttons */}
@@ -401,16 +414,27 @@ export const OrdersModule: React.FC = () => {
               {/* Machine & Add-ons Pricing Editor */}
               <div className="space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <Box className="w-4 h-4 text-[#ff751a]" /> Selected Machine & Add-ons
+                  <Box className="w-4 h-4 text-[#ff751a]" /> Selected Machine & Add-ons Pricing Editor
                 </h3>
 
-                <div className="p-3 bg-orange-50/50 border border-orange-200/80 rounded-xl flex items-center justify-between text-xs">
-                  <span className="font-extrabold text-slate-900">{selectedOrder.chassis_title}</span>
-                  <span className="font-mono font-bold text-slate-900">
-                    ৳{selectedOrder.chassis_base_price.toLocaleString('en-BD')}
-                  </span>
+                {/* Chassis Base Price Input */}
+                <div className="p-3.5 bg-orange-50/50 border border-orange-200/80 rounded-xl flex items-center justify-between gap-4 text-xs shadow-2xs">
+                  <div className="flex-1">
+                    <span className="font-extrabold text-slate-900 block text-sm">{selectedOrder.chassis_title}</span>
+                    <span className="text-[11px] text-slate-500 font-medium">Base Machine Chassis Price</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-600">৳</span>
+                    <input
+                      type="number"
+                      value={drawerChassisPrice}
+                      onChange={(e) => setDrawerChassisPrice(parseFloat(e.target.value) || 0)}
+                      className="w-32 px-3 py-1.5 text-xs font-black text-slate-900 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#ff751a] focus:outline-none text-right"
+                    />
+                  </div>
                 </div>
 
+                {/* Addons List with editable prices */}
                 <div className="space-y-2">
                   {drawerAddons.map((addonItem, idx) => (
                     <div
@@ -440,10 +464,23 @@ export const OrdersModule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Financial Box */}
+              {/* Admin Notes / Special Terms Textarea */}
+              <div className="space-y-1.5 text-xs">
+                <label className="block text-slate-700 font-bold flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#ff751a]" /> Admin Notes & Special Offer Terms (Included in Customer Email & PDF):
+                </label>
+                <textarea
+                  value={drawerNotes}
+                  onChange={(e) => setDrawerNotes(e.target.value)}
+                  placeholder="Add any customized discount details, special warranty terms, or delivery notes..."
+                  className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ff751a] h-20"
+                />
+              </div>
+
+              {/* Financial Breakdown Box */}
               <div className="bg-slate-900 text-white p-5 rounded-2xl space-y-4 shadow-lg">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#ff751a] flex items-center gap-1.5">
-                  <Calculator className="w-4 h-4" /> VAT & Grand Total Breakdown
+                  <Calculator className="w-4 h-4" /> VAT & Live Grand Total Breakdown
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4 text-xs">
@@ -470,6 +507,14 @@ export const OrdersModule: React.FC = () => {
 
                 <div className="pt-3 border-t border-slate-800 space-y-1.5 text-xs">
                   <div className="flex justify-between text-slate-400">
+                    <span>Machine Base Chassis:</span>
+                    <span className="font-mono">৳{Number(drawerChassisPrice || 0).toLocaleString('en-BD')}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-400">
+                    <span>Add-ons Total:</span>
+                    <span className="font-mono">৳{liveAddonsTotal.toLocaleString('en-BD')}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-300 font-semibold pt-1 border-t border-slate-800/80">
                     <span>Subtotal:</span>
                     <span className="font-mono">৳{liveSubtotal.toLocaleString('en-BD')}</span>
                   </div>
