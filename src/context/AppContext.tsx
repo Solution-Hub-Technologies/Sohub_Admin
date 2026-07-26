@@ -439,10 +439,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (dbOrders && dbOrders.length > 0) {
+      if (dbOrders) {
         setOrders(dbOrders as Order[]);
-      } else {
-        setOrders(INITIAL_ORDERS);
       }
 
       const { data: dbChassis } = await supabase
@@ -450,10 +448,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (dbChassis && dbChassis.length > 0) {
+      if (dbChassis) {
         setChassisList(dbChassis as Chassis[]);
-      } else {
-        setChassisList(INITIAL_CHASSIS);
       }
 
       const { data: dbAddons } = await supabase
@@ -461,10 +457,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('sort_order', { ascending: true });
 
-      if (dbAddons && dbAddons.length > 0) {
+      if (dbAddons) {
         setAddonsList(dbAddons as Addon[]);
-      } else {
-        setAddonsList(INITIAL_ADDONS);
       }
 
       setIsSupabaseLive(true);
