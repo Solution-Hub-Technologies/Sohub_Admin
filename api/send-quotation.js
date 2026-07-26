@@ -44,42 +44,24 @@ const getPDFBuffer = (data) => {
       doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a')
          .text('Customer Details', mmToPt(10), mmToPt(36), { lineBreak: false });
       doc.font('Helvetica').fontSize(9).fillColor('#0f172a')
-         .text(`Date: ${dateString}`, mmToPt(10), mmToPt(36), { width: mmToPt(135), align: 'right', lineBreak: false });
+         .text(`Date: ${dateString}`, mmToPt(10), mmToPt(36), { width: mmToPt(190), align: 'right', lineBreak: false });
 
       // Customer info lines
       let currentY = mmToPt(42);
       doc.font('Helvetica').fontSize(8.5).fillColor('#334155');
-      doc.text(`Name: ${data.customer_name || 'N/A'}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
+      doc.text(`Name: ${data.customer_name || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
       currentY += mmToPt(4.2);
       if (data.customer_company) {
-        doc.text(`Company: ${data.customer_company}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
+        doc.text(`Company: ${data.customer_company}`, mmToPt(10), currentY, { lineBreak: false });
         currentY += mmToPt(4.2);
       }
-      doc.text(`Email: ${data.customer_email || 'N/A'} | Phone: ${data.customer_phone || 'N/A'}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
+      doc.text(`Email: ${data.customer_email || 'N/A'} | Phone: ${data.customer_phone || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
       currentY += mmToPt(4.2);
-      doc.text(`Delivery Location: ${data.delivery_location || 'N/A'}`, mmToPt(10), currentY, { width: mmToPt(135), lineBreak: false });
+      doc.text(`Delivery Location: ${data.delivery_location || 'N/A'}`, mmToPt(10), currentY, { lineBreak: false });
       currentY += mmToPt(4.2);
-
-      // Top-Right Machine Preview Image Card
-      let machineImgFile = 'imported_sv_1.png';
-      const chassisLower = (data.chassis_title || '').toLowerCase();
-      if (chassisLower.includes('local')) {
-        machineImgFile = 'sohub-snacks-local.png';
-      } else if (chassisLower.includes('fridge') || chassisLower.includes('smart')) {
-        machineImgFile = 'machine-smart-fridge.jpg';
-      }
-      const machineImgPath = path.join(process.cwd(), 'public', 'images', machineImgFile);
-
-      if (fs.existsSync(machineImgPath)) {
-        doc.image(machineImgPath, mmToPt(150), mmToPt(10), {
-          fit: [mmToPt(50), mmToPt(48)],
-          align: 'center',
-          valign: 'center',
-        });
-      }
 
       // Table Header
-      currentY = Math.max(currentY + mmToPt(4), mmToPt(62));
+      currentY += mmToPt(4);
       doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#0f172a');
       doc.text('Particulars', mmToPt(10), currentY, { width: mmToPt(95), lineBreak: false });
       doc.text('Qty', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
@@ -89,11 +71,33 @@ const getPDFBuffer = (data) => {
       currentY += mmToPt(4.5);
       doc.strokeColor('#0f172a').lineWidth(1)
          .moveTo(mmToPt(10), currentY).lineTo(mmToPt(200), currentY).stroke();
-      currentY += mmToPt(3);
+      currentY += mmToPt(3.5);
+
+      // Render Machine Image Thumbnail right next to Particulars rows
+      let machineImgFile = 'imported_sv_1.png';
+      const chassisLower = (data.chassis_title || '').toLowerCase();
+      if (chassisLower.includes('local')) {
+        machineImgFile = 'sohub-snacks-local.png';
+      } else if (chassisLower.includes('fridge') || chassisLower.includes('smart')) {
+        machineImgFile = 'machine-smart-fridge.png';
+      }
+      const machineImgPath = path.join(process.cwd(), 'public', 'images', machineImgFile);
+
+      if (fs.existsSync(machineImgPath)) {
+        doc.image(machineImgPath, mmToPt(10), currentY, {
+          fit: [mmToPt(22), mmToPt(32)],
+          align: 'center',
+          valign: 'top',
+        });
+      }
+
+      // Particulars Rows (Shifted slightly to the right to sit nicely next to machine thumbnail)
+      const particularX = fs.existsSync(machineImgPath) ? mmToPt(34) : mmToPt(10);
+      const particularWidth = fs.existsSync(machineImgPath) ? mmToPt(71) : mmToPt(95);
 
       // Chassis Base Row
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#1e293b');
-      doc.text(`${data.chassis_title} (Base Machine)`, mmToPt(10), currentY, { width: mmToPt(95), lineBreak: false });
+      doc.text(`${data.chassis_title} (Base Machine)`, particularX, currentY, { width: particularWidth, lineBreak: false });
       doc.font('Helvetica').fontSize(8.5);
       doc.text('1', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
       const basePriceFormatted = Number(data.chassis_base_price || 0).toLocaleString('en-BD');
@@ -112,7 +116,7 @@ const getPDFBuffer = (data) => {
       for (const addon of addons) {
         const isTbd = addon.is_tbd || Number(addon.final_price) === 0;
         doc.font('Helvetica').fontSize(8.5).fillColor('#334155');
-        doc.text(`+ ${addon.addon_name}`, mmToPt(10), currentY, { width: mmToPt(95), lineBreak: false });
+        doc.text(`+ ${addon.addon_name}`, particularX, currentY, { width: particularWidth, lineBreak: false });
         doc.text('1', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
         if (isTbd) {
           doc.text('TBD', mmToPt(128), currentY, { width: mmToPt(34), align: 'right', lineBreak: false });
@@ -127,6 +131,9 @@ const getPDFBuffer = (data) => {
         }
         currentY += mmToPt(4.5);
       }
+
+      // Ensure currentY accounts for height of machine thumbnail if addons list is short
+      currentY = Math.max(currentY, currentY + mmToPt(2));
 
       // Totals Divider
       currentY += mmToPt(3);
@@ -252,15 +259,7 @@ export default async function handler(req, res) {
       ? [{ filename: `Quotation_${order_number || 'SHB'}.pdf`, content: pdfBase64, encoding: 'base64' }]
       : [];
 
-    let webMachineImgFile = 'imported_sv_1.png';
-    const cLower = (chassis_title || '').toLowerCase();
-    if (cLower.includes('local')) {
-      webMachineImgFile = 'sohub-snacks-local.png';
-    } else if (cLower.includes('fridge') || cLower.includes('smart')) {
-      webMachineImgFile = 'machine-smart-fridge.png';
-    }
-
-    // Greetings Email Body with Logo Header & Machine Image
+    // Greetings Email Body without image (image only in attached PDF)
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">
@@ -272,8 +271,6 @@ export default async function handler(req, res) {
           .header { text-align: center; border-bottom: 2px solid #ff5454; padding-bottom: 16px; margin-bottom: 24px; }
           .header img { height: 44px; display: block; margin: 0 auto 10px auto; }
           .greeting { font-size: 15px; line-height: 1.6; color: #334155; }
-          .machine-box { text-align: center; margin: 16px 0; padding: 10px; }
-          .machine-box img { max-height: 210px; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.08)); }
           .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin: 20px 0; font-size: 13px; }
           .card h3 { margin-top: 0; color: #0f172a; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
           .summary-item { display: flex; justify-content: space-between; margin-bottom: 6px; }
@@ -294,11 +291,6 @@ export default async function handler(req, res) {
             <p>Dear <strong>${customer_name || 'Valued Customer'}</strong>,</p>
             <p>Greetings from <strong>Machine by SOHUB</strong>!</p>
             <p>Following our recent discussion and re-estimation, we are pleased to present the official quotation for your vending machine requirement. Please find the detailed quotation PDF attached to this email (<code>Quotation_${order_number}.pdf</code>).</p>
-          </div>
-
-          <div class="machine-box">
-            <img src="https://sohub-admin.vercel.app/images/${webMachineImgFile}" alt="${chassis_title}" />
-            <p style="margin: 8px 0 0 0; font-size: 12px; font-weight: bold; color: #0f172a;">${chassis_title}</p>
           </div>
 
           <div class="card">
