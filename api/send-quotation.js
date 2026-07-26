@@ -108,13 +108,9 @@ const getPDFBuffer = (data) => {
       doc.text('1', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
       const basePriceFormatted = Number(data.chassis_base_price || 0).toLocaleString('en-BD');
       
-      // Unit price: BDT left aligned at 128mm, amount right aligned to 162mm
-      doc.text('BDT', mmToPt(128), currentY, { lineBreak: false });
-      doc.text(basePriceFormatted, mmToPt(128), currentY, { width: mmToPt(34), align: 'right', lineBreak: false });
-      
-      // Total price: BDT left aligned at 164mm, amount right aligned to 200mm
-      doc.text('BDT', mmToPt(164), currentY, { lineBreak: false });
-      doc.text(basePriceFormatted, mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
+      // Unit price & Total price with BDT adjacent to number
+      doc.text(`BDT ${basePriceFormatted}`, mmToPt(126), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
+      doc.text(`BDT ${basePriceFormatted}`, mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
       
       currentY += Math.max(chassisHeight, mmToPt(4.5)) + mmToPt(1.2);
 
@@ -130,15 +126,12 @@ const getPDFBuffer = (data) => {
         doc.text('1', mmToPt(108), currentY, { width: mmToPt(18), align: 'center', lineBreak: false });
 
         if (isTbd) {
-          doc.text('TBD', mmToPt(128), currentY, { width: mmToPt(34), align: 'right', lineBreak: false });
+          doc.text('TBD', mmToPt(126), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
           doc.text('TBD', mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
         } else {
           const addonPriceFormatted = Number(addon.final_price).toLocaleString('en-BD');
-          doc.text('BDT', mmToPt(128), currentY, { lineBreak: false });
-          doc.text(addonPriceFormatted, mmToPt(128), currentY, { width: mmToPt(34), align: 'right', lineBreak: false });
-          
-          doc.text('BDT', mmToPt(164), currentY, { lineBreak: false });
-          doc.text(addonPriceFormatted, mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
+          doc.text(`BDT ${addonPriceFormatted}`, mmToPt(126), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
+          doc.text(`BDT ${addonPriceFormatted}`, mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
         }
         currentY += Math.max(addonHeight, mmToPt(4.2)) + mmToPt(1.2);
       }
@@ -158,16 +151,14 @@ const getPDFBuffer = (data) => {
       doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
       doc.text('Subtotal:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a');
-      doc.text('BDT', mmToPt(164), currentY, { lineBreak: false });
-      doc.text(Number(data.subtotal || 0).toLocaleString('en-BD'), mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
+      doc.text(`BDT ${Number(data.subtotal || 0).toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
       currentY += mmToPt(4.2);
 
       // VAT
       doc.font('Helvetica').fontSize(8.5).fillColor('#475569');
       doc.text(`VAT (${data.vat_rate || 5}%):`, mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
       doc.font('Helvetica-Bold').fontSize(8.5).fillColor('#0f172a');
-      doc.text('BDT', mmToPt(164), currentY, { lineBreak: false });
-      doc.text(Number(data.vat_amount || 0).toLocaleString('en-BD'), mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
+      doc.text(`BDT ${Number(data.vat_amount || 0).toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
       currentY += mmToPt(5);
 
       // Grand Total
@@ -176,8 +167,7 @@ const getPDFBuffer = (data) => {
       currentY += mmToPt(2.5);
       doc.font('Helvetica-Bold').fontSize(10).fillColor('#ff5454');
       doc.text('Grand Total:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
-      doc.text('BDT', mmToPt(164), currentY, { lineBreak: false });
-      doc.text(Number(data.grand_total || 0).toLocaleString('en-BD'), mmToPt(164), currentY, { width: mmToPt(36), align: 'right', lineBreak: false });
+      doc.text(`BDT ${Number(data.grand_total || 0).toLocaleString('en-BD')}`, mmToPt(150), currentY, { width: mmToPt(50), align: 'right', lineBreak: false });
       currentY += mmToPt(7);
 
       // Terms & Conditions Notes Header
