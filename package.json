@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
+    "@types/pdfkit": "^0.17.6",
     "clsx": "^2.1.1",
     "lucide-react": "^0.479.0",
+    "pdfkit": "^0.19.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.1",

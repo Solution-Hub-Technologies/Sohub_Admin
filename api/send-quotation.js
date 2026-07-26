@@ -1,3 +1,156 @@
+import PDFDocument from 'pdfkit';
+
+const mmToPt = (mm) => (mm * 72) / 25.4;
+
+const getPDFBuffer = (data) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: mmToPt(10), bottom: mmToPt(10), left: mmToPt(12), right: mmToPt(12) },
+        autoFirstPage: false,
+        bufferPages: true,
+      });
+
+      const chunks = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err) => reject(err));
+
+      doc.addPage();
+
+      // Background
+      doc.rect(0, 0, mmToPt(210), mmToPt(297)).fill('#f6f5f2');
+
+      // Title & Brand Header
+      doc.font('Helvetica-Bold').fontSize(22).fillColor('#0f172a')
+         .text('machine', mmToPt(12), mmToPt(14), { lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(14).fillColor('#ff5454')
+         .text('BY SOHUB', mmToPt(12), mmToPt(23), { lineBreak: false });
+
+      // Quotation Number
+      doc.font('Helvetica-Bold').fontSize(14).fillColor('#ff5454')
+         .text(`Quotation No: ${data.order_number}`, mmToPt(12), mmToPt(34), { lineBreak: false });
+
+      // Customer Details Header + Date
+      const dateString = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.');
+      doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a')
+         .text('Customer Details', mmToPt(12), mmToPt(46), { lineBreak: false });
+      doc.font('Helvetica').fontSize(10).fillColor('#0f172a')
+         .text(`Date: ${dateString}`, mmToPt(12), mmToPt(46), { align: 'right', width: mmToPt(186), lineBreak: false });
+
+      // Customer info
+      let currentY = mmToPt(54);
+      doc.font('Helvetica').fontSize(9).fillColor('#334155');
+      doc.text(`Name: ${data.customer_name || 'N/A'}`, mmToPt(12), currentY, { lineBreak: false });
+      currentY += mmToPt(5);
+      if (data.customer_company) {
+        doc.text(`Company: ${data.customer_company}`, mmToPt(12), currentY, { lineBreak: false });
+        currentY += mmToPt(5);
+      }
+      doc.text(`Email: ${data.customer_email || 'N/A'} | Phone: ${data.customer_phone || 'N/A'}`, mmToPt(12), currentY, { lineBreak: false });
+      currentY += mmToPt(5);
+      doc.text(`Delivery Location: ${data.delivery_location || 'N/A'}`, mmToPt(12), currentY, { lineBreak: false });
+      currentY += mmToPt(5);
+
+      // Table Header
+      currentY += mmToPt(6);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a');
+      doc.text('Particulars', mmToPt(12), currentY, { width: mmToPt(95), lineBreak: false });
+      doc.text('Qty', mmToPt(110), currentY, { width: mmToPt(25), align: 'center', lineBreak: false });
+      doc.text('Unit Price', mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
+      doc.text('Total (BDT)', mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
+
+      currentY += mmToPt(5);
+      doc.strokeColor('#0f172a').lineWidth(1)
+         .moveTo(mmToPt(12), currentY).lineTo(mmToPt(198), currentY).stroke();
+      currentY += mmToPt(4);
+
+      // Chassis Base Row
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#1e293b');
+      doc.text(`${data.chassis_title} (Base Machine)`, mmToPt(12), currentY, { width: mmToPt(95), lineBreak: false });
+      doc.font('Helvetica').fontSize(9);
+      doc.text('1', mmToPt(110), currentY, { width: mmToPt(25), align: 'center', lineBreak: false });
+      const basePriceFormatted = Number(data.chassis_base_price || 0).toLocaleString('en-BD');
+      doc.text(`BDT ${basePriceFormatted}`, mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
+      doc.text(`BDT ${basePriceFormatted}`, mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
+      currentY += mmToPt(6);
+
+      // Selected Addons
+      const addons = data.selected_addons || [];
+      for (const addon of addons) {
+        const isTbd = addon.is_tbd || Number(addon.final_price) === 0;
+        doc.font('Helvetica').fontSize(9).fillColor('#334155');
+        doc.text(`+ ${addon.addon_name}`, mmToPt(12), currentY, { width: mmToPt(95), lineBreak: false });
+        doc.text('1', mmToPt(110), currentY, { width: mmToPt(25), align: 'center', lineBreak: false });
+        if (isTbd) {
+          doc.text('TBD', mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
+          doc.text('TBD', mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
+        } else {
+          const addonPriceFormatted = Number(addon.final_price).toLocaleString('en-BD');
+          doc.text(`BDT ${addonPriceFormatted}`, mmToPt(135), currentY, { width: mmToPt(30), align: 'center', lineBreak: false });
+          doc.text(`BDT ${addonPriceFormatted}`, mmToPt(165), currentY, { width: mmToPt(33), align: 'right', lineBreak: false });
+        }
+        currentY += mmToPt(5.5);
+      }
+
+      // Totals Divider
+      currentY += mmToPt(4);
+      doc.strokeColor('#cbd5e1').lineWidth(0.5)
+         .moveTo(mmToPt(120), currentY).lineTo(mmToPt(198), currentY).stroke();
+      currentY += mmToPt(3);
+
+      // Subtotal
+      doc.font('Helvetica').fontSize(9).fillColor('#475569');
+      doc.text('Subtotal:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a');
+      doc.text(`BDT ${Number(data.subtotal || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(38), align: 'right', lineBreak: false });
+      currentY += mmToPt(5);
+
+      // VAT
+      doc.font('Helvetica').fontSize(9).fillColor('#475569');
+      doc.text(`VAT (${data.vat_rate || 5}%):`, mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#0f172a');
+      doc.text(`BDT ${Number(data.vat_amount || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(38), align: 'right', lineBreak: false });
+      currentY += mmToPt(6);
+
+      // Grand Total
+      doc.strokeColor('#0f172a').lineWidth(1)
+         .moveTo(mmToPt(120), currentY).lineTo(mmToPt(198), currentY).stroke();
+      currentY += mmToPt(3);
+      doc.font('Helvetica-Bold').fontSize(11).fillColor('#ff5454');
+      doc.text('Grand Total:', mmToPt(120), currentY, { width: mmToPt(40), lineBreak: false });
+      doc.text(`BDT ${Number(data.grand_total || 0).toLocaleString('en-BD')}`, mmToPt(160), currentY, { width: mmToPt(38), align: 'right', lineBreak: false });
+      currentY += mmToPt(10);
+
+      // Terms & Conditions Notes Header
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#0f172a');
+      doc.text('Terms, Conditions & Notes', mmToPt(12), currentY, { lineBreak: false });
+      currentY += mmToPt(5);
+
+      // Render notes lines
+      const notesText = data.admin_notes || '';
+      const notesLines = notesText.split('\n').filter(l => l.trim().length > 0);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#475569');
+      for (const line of notesLines) {
+        if (currentY > mmToPt(275)) break;
+        doc.text(line, mmToPt(12), currentY, { width: mmToPt(186), lineBreak: true });
+        currentY += mmToPt(4);
+      }
+
+      // Footer
+      const footerY = mmToPt(297) - mmToPt(12);
+      doc.font('Helvetica').fontSize(8).fillColor('#64748b');
+      doc.text('For Support, Email: hello@sohub.com.bd | Phone: +880 1922-036882', mmToPt(12), footerY - mmToPt(4), { align: 'center', width: mmToPt(186), lineBreak: false });
+      doc.text('Machine by SOHUB — Building reliable machine infrastructure for Bangladesh', mmToPt(12), footerY, { align: 'center', width: mmToPt(186), lineBreak: false });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,6 +170,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    const data = req.body || {};
     const {
       order_number,
       customer_name,
@@ -33,166 +187,82 @@ export default async function handler(req, res) {
       grand_total,
       admin_notes,
       customer_notes,
-    } = req.body || {};
+    } = data;
 
     const lambdaUrl = process.env.LAMBDA_API_URL;
     const lambdaSecret = process.env.LAMBDA_SECRET;
     const adminEmail = process.env.ADMIN_EMAIL || 'hello@sohub.com.bd';
 
-    const defaultNotesText = `*** Note:
-i. All prices are exclusive of all applicable government taxes and charges.
-ii. Delivery Time: 45–60 working days after issuance of the purchase order.
-iii. Quotation Validity: This offer is valid for 30 days from the date of submission.
-iv. Technical support related to the machine will be provided remotely by SOHUB through online or telephone assistance.
-v. Electrical setup and electrician support must be arranged by the customer.
-vi. Installation, commissioning, and user training are included. A 1-year service warranty is provided; however, spare parts and consumable items are not covered under the warranty.
-vii. Any on-site support visit requested by the Customer after installation will be chargeable based on the location, travel, and time required.
-viii. The monthly recurring service fee shall become effective from the date of successful installation and acceptance of the system by the Customer.`;
+    // Generate PDF Buffer and Base64 Attachment
+    let pdfBase64 = '';
+    try {
+      const pdfBuffer = await getPDFBuffer(data);
+      pdfBase64 = pdfBuffer.toString('base64');
+    } catch (pdfErr) {
+      console.error('PDF generation error:', pdfErr);
+    }
 
-    const finalNotes = admin_notes || defaultNotesText;
+    const attachments = pdfBase64
+      ? [{ filename: `Quotation_${order_number || 'SHB'}.pdf`, content: pdfBase64, encoding: 'base64' }]
+      : [];
 
-    // Format notes lines for rendering
-    const formattedNotesLines = finalNotes
-      .split('\n')
-      .filter((line) => line.trim().length > 0)
-      .map((line) => `<li style="margin-bottom: 6px; color: #334155;">${line}</li>`)
-      .join('');
-
-    // Premium PDF-Matched HTML Quotation Email Template
+    // Greetings Email Body
     const htmlContent = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Quotation #${order_number}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:ital,wght@0,500;0,600;0,700&display=swap" rel="stylesheet">
         <style>
-          body { font-family: 'Inter', sans-serif; background-color: #e2e8f0; margin: 0; padding: 20px; color: #1e293b; }
-          .page { max-width: 680px; margin: 0 auto; background: #f6f5f2; border-radius: 16px; padding: 36px 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #cbd5e1; }
-          .logo-header { font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 300; margin: 0 0 20px 0; color: #0f172a; }
-          .logo-header strong { font-weight: 800; font-size: 18px; color: #ff5454; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-          .quote-title { font-family: 'Lora', serif; font-size: 24px; font-weight: 600; color: #ff5454; margin-bottom: 24px; border-bottom: 2px solid #ff5454; padding-bottom: 8px; }
-          .info-grid { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 24px; background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
-          .info-grid p { margin: 3px 0; color: #475569; }
-          .info-grid strong { color: #0f172a; }
-          .section-header { font-family: 'Lora', serif; font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
-          .items-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
-          .items-table th { font-family: 'Lora', serif; font-size: 14px; font-weight: 600; text-align: left; padding: 10px 12px; border-bottom: 2px solid #0f172a; color: #0f172a; }
-          .items-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: 500; color: #334155; }
-          .items-table .right { text-align: right; }
-          .items-table .center { text-align: center; }
-          .tbd-badge { display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 800; background-color: #fef3c7; color: #92400e; border-radius: 4px; border: 1px solid #fde68a; }
-          .totals-container { margin-top: 24px; display: flex; justify-content: flex-end; }
-          .totals-table { width: 280px; border-collapse: collapse; font-size: 12px; }
-          .totals-table td { padding: 6px 10px; }
-          .totals-table td.label { font-family: 'Lora', serif; font-size: 14px; color: #475569; }
-          .totals-table td.value { text-align: right; font-weight: 700; color: #0f172a; }
-          .totals-table tr.grand-total td { font-size: 16px; font-weight: 800; color: #ff5454; border-top: 2px solid #0f172a; padding-top: 10px; }
-          .notes-block { background: #ffffff; padding: 18px 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 32px; font-size: 11px; }
-          .notes-block h4 { font-family: 'Lora', serif; font-size: 14px; font-weight: 600; margin: 0 0 10px 0; color: #0f172a; }
-          .terms-list { padding-left: 18px; margin: 0; list-style-type: decimal; }
-          .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #cbd5e1; padding-top: 20px; }
-          .footer span { color: #ff5454; font-weight: 700; }
-          .powered-by { text-align: right; margin-top: 12px; font-family: 'Lora', serif; font-size: 11px; font-weight: 600; color: #475569; }
-          .powered-by strong { color: #d97706; }
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px; color: #1e293b; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+          .header { text-align: center; border-bottom: 2px solid #ff5454; padding-bottom: 16px; margin-bottom: 24px; }
+          .header h1 { font-size: 24px; color: #0f172a; margin: 0; }
+          .header span { color: #ff5454; font-weight: bold; }
+          .greeting { font-size: 15px; line-height: 1.6; color: #334155; }
+          .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin: 20px 0; font-size: 13px; }
+          .card h3 { margin-top: 0; color: #0f172a; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
+          .summary-item { display: flex; justify-content: space-between; margin-bottom: 6px; }
+          .grand-total { font-size: 16px; font-weight: bold; color: #ff5454; border-top: 1.5px solid #0f172a; padding-top: 8px; margin-top: 8px; }
+          .pdf-notice { background: #fff7ed; border-left: 4px solid #f97316; padding: 12px; border-radius: 6px; font-size: 13px; color: #9a3412; margin: 20px 0; }
+          .footer { border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 12px; color: #64748b; text-align: center; margin-top: 30px; }
+          .footer a { color: #ff5454; text-decoration: none; font-weight: bold; }
         </style>
       </head>
       <body>
-        <div class="page">
-          <!-- Logo Header -->
-          <div class="logo-header">
-            machine
-            <strong>by sohub</strong>
+        <div class="container">
+          <div class="header">
+            <h1>machine <span>BY SOHUB</span></h1>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Quotation Reference: #${order_number}</p>
           </div>
 
-          <!-- Quotation Title -->
-          <div class="quote-title">Quotation No: ${order_number}</div>
-
-          <!-- Customer & Date info grid -->
-          <div class="info-grid">
-            <div>
-              <div class="section-header">Customer Details</div>
-              <p>Name: <strong>${customer_name}</strong></p>
-              <p>Company: <strong>${customer_company || 'Individual Lead'}</strong></p>
-              <p>Email: <strong>${customer_email}</strong> | Phone: <strong>${customer_phone}</strong></p>
-              <p>Delivery Location: <strong>${delivery_location}</strong></p>
-            </div>
-            <div style="text-align: right;">
-              <div class="section-header">Date</div>
-              <p><strong>${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</strong></p>
-            </div>
+          <div class="greeting">
+            <p>Dear <strong>${customer_name || 'Valued Customer'}</strong>,</p>
+            <p>Greetings from <strong>Machine by SOHUB</strong>!</p>
+            <p>Following our recent discussion and re-estimation, we are pleased to present the official quotation for your vending machine requirement. Please find the detailed quotation PDF attached to this email (<code>Quotation_${order_number}.pdf</code>).</p>
           </div>
 
-          ${customer_notes ? `
-            <div style="background: #fff7ed; padding: 12px 16px; border-left: 4px solid #f97316; border-radius: 6px; margin-bottom: 20px; font-size: 12px; color: #9a3412;">
-              <strong>Customer Request Note:</strong> "${customer_notes}"
-            </div>
-          ` : ''}
-
-          <!-- Items Table -->
-          <div class="section-header">Particulars & Pricing Breakdown</div>
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th width="55%">Particulars</th>
-                <th class="center" width="15%">Qty</th>
-                <th class="right" width="30%">Price (BDT)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>${chassis_title} (Base Machine Chassis)</strong></td>
-                <td class="center">1</td>
-                <td class="right">৳${Number(chassis_base_price || 0).toLocaleString('en-BD')}</td>
-              </tr>
-              ${(selected_addons || []).map(addon => {
-                const isTbd = addon.is_tbd || Number(addon.final_price) === 0;
-                return `
-                  <tr>
-                    <td>+ ${addon.addon_name} ${isTbd ? '<span class="tbd-badge">TBD</span>' : ''}</td>
-                    <td class="center">1</td>
-                    <td class="right">${isTbd ? '<span class="tbd-badge">To Be Discussed</span>' : '৳' + Number(addon.final_price).toLocaleString('en-BD')}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-
-          <!-- Totals Container -->
-          <div class="totals-container">
-            <table class="totals-table">
-              <tr>
-                <td class="label">Subtotal</td>
-                <td class="value">৳${Number(subtotal || 0).toLocaleString('en-BD')}</td>
-              </tr>
-              <tr>
-                <td class="label">VAT (${vat_rate || 5}%)</td>
-                <td class="value">৳${Number(vat_amount || 0).toLocaleString('en-BD')}</td>
-              </tr>
-              <tr class="grand-total">
-                <td class="label" style="font-weight:700; color:#ff5454;">Grand Total</td>
-                <td class="value">৳${Number(grand_total || 0).toLocaleString('en-BD')}</td>
-              </tr>
-            </table>
+          <div class="card">
+            <h3>Quotation Summary Overview</h3>
+            <div class="summary-item"><span>Machine Model:</span> <strong>${chassis_title}</strong></div>
+            <div class="summary-item"><span>Base Chassis Price:</span> <strong>৳${Number(chassis_base_price || 0).toLocaleString('en-BD')}</strong></div>
+            <div class="summary-item"><span>Selected Add-ons Total:</span> <strong>৳${(selected_addons || []).reduce((s, a) => s + (Number(a.final_price) || 0), 0).toLocaleString('en-BD')}</strong></div>
+            <div class="summary-item"><span>Subtotal:</span> <strong>৳${Number(subtotal || 0).toLocaleString('en-BD')}</strong></div>
+            <div class="summary-item"><span>VAT (${vat_rate || 5}%):</span> <strong>৳${Number(vat_amount || 0).toLocaleString('en-BD')}</strong></div>
+            <div class="summary-item grand-total"><span>Grand Total:</span> <strong>৳${Number(grand_total || 0).toLocaleString('en-BD')}</strong></div>
           </div>
 
-          <!-- Notes / Terms & Conditions -->
-          <div class="notes-block">
-            <h4>Terms, Conditions & Important Notes</h4>
-            <ol class="terms-list">
-              ${formattedNotesLines}
-            </ol>
+          <div class="pdf-notice">
+            📌 <strong>Attachment Included:</strong> The complete quotation document with detailed technical specifications, warranty terms, and terms of service has been attached as a PDF file to this email.
           </div>
 
-          <!-- Footer -->
+          <div class="greeting">
+            <p>If you have any questions, require further customization, or are ready to confirm your order, please reply directly to this email or call our hotline at <strong>+880 1922-036882</strong>.</p>
+          </div>
+
           <div class="footer">
-            <p>For Support, Email: <span>${adminEmail}</span> | Phone: <span>+880 1922-036882</span></p>
-            <p>Machine by SOHUB — Building reliable machine infrastructure for Bangladesh</p>
-          </div>
-
-          <div class="powered-by">
-            Powered BY <strong>{...} sohub</strong>
+            <p>Best Regards,</p>
+            <p><strong>SOHUB Sales & Solutions Team</strong><br>Solution Hub Technologies</p>
+            <p><a href="https://machines.sohub.com.bd">machines.sohub.com.bd</a> | Email: hello@sohub.com.bd</p>
           </div>
         </div>
       </body>
@@ -205,18 +275,19 @@ viii. The monthly recurring service fee shall become effective from the date of 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: customer_name,
+            name: 'SOHUB Team',
             email: adminEmail,
             to: customer_email,
             subject: `Official Quotation #${order_number} - Machine by SOHUB`,
             source: 'SOHUB Admin Portal',
             secretKey: lambdaSecret,
             htmlTemplate: htmlContent,
+            attachments: attachments,
           }),
         });
 
         const lambdaData = await lambdaRes.json();
-        return res.status(200).json({ success: true, message: 'Quotation email sent via AWS Lambda!', result: lambdaData });
+        return res.status(200).json({ success: true, message: 'Quotation email & PDF sent via AWS Lambda!', result: lambdaData });
       } catch (err) {
         console.error('Lambda email delivery error:', err);
         return res.status(200).json({ success: true, warning: err.message, message: 'Quotation updated in database (Lambda dispatch offline).' });
