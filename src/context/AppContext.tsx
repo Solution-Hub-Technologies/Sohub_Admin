@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Chassis, Addon, Order, GlobalSettings, OrderStatus, AdminUser, UserRole } from '../lib/types';
-import { INITIAL_SETTINGS } from '../lib/mockData';
+import { INITIAL_SETTINGS, INITIAL_CHASSIS, INITIAL_ADDONS, INITIAL_ORDERS } from '../lib/mockData';
 import { supabase, clearAllSupabaseTables } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 
@@ -439,8 +439,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (dbOrders) {
+      if (dbOrders && dbOrders.length > 0) {
         setOrders(dbOrders as Order[]);
+      } else {
+        setOrders(INITIAL_ORDERS);
       }
 
       const { data: dbChassis } = await supabase
@@ -448,8 +450,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (dbChassis) {
+      if (dbChassis && dbChassis.length > 0) {
         setChassisList(dbChassis as Chassis[]);
+      } else {
+        setChassisList(INITIAL_CHASSIS);
       }
 
       const { data: dbAddons } = await supabase
@@ -457,8 +461,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .select('*')
         .order('sort_order', { ascending: true });
 
-      if (dbAddons) {
+      if (dbAddons && dbAddons.length > 0) {
         setAddonsList(dbAddons as Addon[]);
+      } else {
+        setAddonsList(INITIAL_ADDONS);
       }
 
       setIsSupabaseLive(true);
