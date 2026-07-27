@@ -38,7 +38,7 @@ export const LightLogin: React.FC = () => {
           <div className="flex flex-col items-center mb-8">
             <div className="bg-white p-4 rounded-2xl shadow-lg shadow-orange-500/10 mb-5 border border-slate-100/80 transform hover:scale-105 transition-transform duration-200 flex items-center justify-center">
               <img
-                src="/favicon.png"
+                src="/images.png"
                 alt="SOHUB Logo"
                 className="w-12 h-12 object-contain"
               />
