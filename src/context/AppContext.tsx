@@ -103,7 +103,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem('sohub_auth_status');
-    return saved ? JSON.parse(saved) : true;
+    return saved ? JSON.parse(saved) : false;
   });
 
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
@@ -111,7 +111,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
     const saved = localStorage.getItem('sohub_current_user');
-    return saved ? JSON.parse(saved) : DEFAULT_USERS[0];
+    return saved ? JSON.parse(saved) : null;
   });
 
   // User Management State
@@ -299,6 +299,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setIsAuthenticated(false);
     setCurrentUser(null);
+    localStorage.removeItem('sohub_auth_status');
+    localStorage.removeItem('sohub_current_user');
     showToast('Signed out successfully', 'info');
   };
 
